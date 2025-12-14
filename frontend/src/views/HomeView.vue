@@ -21,16 +21,18 @@
          <div class="btn btn-light rounded-circle p-3">🛒</div>
          <p><small>Магазин</small></p>
        </div>
-       <div class="col-4">
-         <div class="btn btn-light rounded-circle p-3">💸</div>
-         <p><small>Переводы</small></p>
+<div class="col-4">
+         <router-link to="/transfer" class="text-decoration-none text-dark">
+            <div class="btn btn-light rounded-circle p-3">💸</div>
+            <p><small>Переводы</small></p>
+         </router-link>
        </div>
+       
        <div class="col-4">
          <div class="btn btn-light rounded-circle p-3">🏛</div>
          <p><small>Госуслуги</small></p>
        </div>
     </div>
-
     <!-- История -->
     <h5>История операций</h5>
     <ul class="list-group">
