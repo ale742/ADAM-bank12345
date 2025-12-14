@@ -1,14 +1,16 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\BankController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-// Открытые роуты
+use App\Http\Controllers\Api\AuthController;  // <--- ПРОВЕРЬ ЭТУ СТРОКУ!
+use App\Http\Controllers\Api\BankController;
+// Регистрация и вход
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-
-// Защищенные роуты (нужен токен)
+Route::get('/test', function () {
+    return 'Брат, API работает!';
+});
+// Защищенные маршруты
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [BankController::class, 'getUserInfo']);
