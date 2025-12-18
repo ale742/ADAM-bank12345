@@ -20,6 +20,13 @@
           <input v-model="form.name" type="text" class="form-control" placeholder="Как вас зовут?">
         </div>
 
+
+        <!-- НОВОЕ ПОЛЕ: ТЕЛЕФОН -->
+        <div v-if="isRegister" class="mb-3">
+          <label>Телефон</label>
+          <input v-model="form.phone" type="tel" class="form-control" placeholder="8777..." required>
+        </div>
+
         <div class="mb-3">
           <label>Email</label>
           <input v-model="form.email" type="email" class="form-control" required placeholder="email@example.com">
@@ -49,6 +56,7 @@ const router = useRouter();
 
 const form = reactive({
     name: '',
+    phone: '', // <--- ДОБАВЬ ЭТО
     email: '',
     password: ''
 });

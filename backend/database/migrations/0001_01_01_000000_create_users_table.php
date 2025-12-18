@@ -15,11 +15,15 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+
+            // ДОБАВИЛИ ТЕЛЕФОН (Обязательно уникальный)
+            $table->string('phone')->unique();
+
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
 
-            // Вот наша строка баланса:
+            // Баланс
             $table->decimal('balance', 10, 2)->default(0);
 
             $table->rememberToken();

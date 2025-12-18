@@ -11,23 +11,22 @@ use Illuminate\Support\Facades\Auth;
 class AuthController extends Controller
 {
     // Регистрация
-    public function register(Request $request) {
-        // Простая валидация
+public function register(Request $request) {
         $request->validate([
             'name' => 'required',
+            'phone' => 'required|unique:users', // Проверка телефона
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6'
         ]);
 
-        // Создаем юзера
         $user = User::create([
             'name' => $request->name,
+            'phone' => $request->phone, // Сохраняем телефон
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'balance' => 10000.00 // Начисляем бонус
+            'balance' => 10000.00
         ]);
 
-        // Выдаем токен
         return response()->json([
             'token' => $user->createToken('API Token')->plainTextToken,
             'user' => $user
