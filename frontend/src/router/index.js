@@ -4,7 +4,9 @@ import LoginView from '../views/LoginView.vue'
 import MessagesView from '../views/MessagesView.vue'
 import ServicesView from '../views/ServicesView.vue'
 import QRView from '../views/QRView.vue'
-import TransferView from '../views/TransferView.vue' // <--- 1. ДОБАВЬ ЭТОТ ИМПОРТ
+import TransferView from '../views/TransferView.vue' 
+import AccountView from '../views/AccountView.vue'
+import MyBankView from '../views/MyBankView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -14,6 +16,9 @@ const router = createRouter({
     { path: '/messages', name: 'messages', component: MessagesView },
     { path: '/services', name: 'services', component: ServicesView },
     { path: '/qr', name: 'qr', component: QRView },
+    
+    { path: '/account', name: 'account', component: AccountView },
+    { path: '/my-bank', name: 'my-bank', component: MyBankView },
     
     // 2. И ВОТ ЭТУ СТРОКУ ДОБАВЬ ВНУТРЬ МАССИВА:
     { path: '/transfer', name: 'transfer', component: TransferView },
