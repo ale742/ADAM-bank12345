@@ -51,7 +51,7 @@
         </div>
 
         <!-- Магазин -->
-        <div class="service-card bg-white shadow-sm" @click="goTo('/services')">
+        <div class="service-card bg-white shadow-sm" @click="goTo('/shop')">
           <div class="icon-box bg-light-blue text-primary">
             <i class="bi bi-bag-fill fs-4"></i>
           </div>
@@ -67,7 +67,7 @@
         </div>
 
         <!-- Платежи -->
-        <div class="service-card bg-white shadow-sm" @click="goTo('/services')">
+        <div class="service-card bg-white shadow-sm" @click="goTo('/payments')">
           <div class="icon-box bg-light-green text-success">
             <i class="bi bi-credit-card-fill fs-4"></i>
           </div>
@@ -75,7 +75,7 @@
         </div>
 
         <!-- Гос. услуги -->
-        <div class="service-card bg-white shadow-sm" @click="goTo('/services')">
+        <div class="service-card bg-white shadow-sm" @click="goTo('/gov')">
           <div class="icon-box bg-light-orange text-warning">
             <i class="bi bi-bank2 fs-4"></i>
           </div>
