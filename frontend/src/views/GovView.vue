@@ -21,7 +21,7 @@
         Цифровые документы, справки и налоги будут доступны здесь в ближайшем обновлении.
       </p>
 
-      <button class="btn btn-dark rounded-pill px-5 py-2 mt-3 shadow-sm" @click="$router.push('/')">
+      <button class="btn btn-dark rounded-pill px-5 py-2 mt-3 shadow-sm" @click="() => $router.push('/')">
         Понятно
       </button>
 
