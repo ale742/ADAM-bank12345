@@ -2,113 +2,98 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 
 export const useAuthStore = defineStore('auth', () => {
+    // Данные
     const user = ref(JSON.parse(localStorage.getItem('user')) || null);
     const token = ref(localStorage.getItem('token') || null);
     const usersDB = ref(JSON.parse(localStorage.getItem('users_db')) || []);
-
+    
+    // История
     const transactions = ref([
         { id: 1, type: 'shop', description: 'Magnum', amount: 2500, date: '2025-12-19 14:30' },
         { id: 2, type: 'transfer_in', description: 'Пополнение', amount: 5000, date: '2025-12-18 10:00' },
     ]);
 
-    // --- ГЕНЕРАТОР КАРТЫ И IBAN ---
+    // Генератор
     const generateCardData = () => {
-        // 1. Номер карты
         let cardNumber = '8400';
-        for (let i = 0; i < 3; i++) {
-            const block = Math.floor(1000 + Math.random() * 9000);
-            cardNumber += ` ${block}`;
-        }
-
-        // 2. CVV
-        const cvv = Math.floor(100 + Math.random() * 900);
-
-        // 3. Срок действия
-        const date = new Date();
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = (date.getFullYear() + 3).toString().slice(-2);
-        const expDate = `${month}/${year}`;
-
-        // 4. IBAN
-        const randomIbanSuffix = Math.floor(1000000000 + Math.random() * 9000000000);
-        const iban = `KZ99ADAM${randomIbanSuffix}`;
-
-        return { cardNumber, cvv, expDate, iban };
+        for (let i = 0; i < 3; i++) cardNumber += ` ${Math.floor(1000 + Math.random() * 9000)}`;
+        
+        return { 
+            cardNumber, 
+            cvv: Math.floor(100 + Math.random() * 900), 
+            expDate: '12/28',
+            iban: `KZ99ADAM${Math.floor(1000000000 + Math.random() * 9000000000)}`,
+            limits: {
+                internet: true,
+                internet_limit: 50000,
+                cash_limit: 100000,
+                transfer_limit: 150000
+            }
+        };
     };
 
-    // --- РЕГИСТРАЦИЯ ---
+    // Регистрация
     const register = async (credentials) => {
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (usersDB.value.find(u => u.email === credentials.email)) throw new Error('Email занят');
 
-        const exists = usersDB.value.find(u => u.email === credentials.email);
-        if (exists) throw new Error('Пользователь с таким Email уже существует!');
-
-        // Генерируем данные
         const cardData = generateCardData();
-
         const newUser = {
             id: Date.now(),
-            name: credentials.name,
-            email: credentials.email,
-            phone: credentials.phone,
-            password: credentials.password,
+            ...credentials,
             balance: 10000,
-            card_number: cardData.cardNumber,
-            card_cvv: cardData.cvv,
-            card_exp: cardData.expDate,
-            iban: cardData.iban
+            ...cardData
         };
 
         usersDB.value.push(newUser);
         localStorage.setItem('users_db', JSON.stringify(usersDB.value));
     };
 
-    // --- ВХОД (ИСПРАВЛЕНО) ---
+    // Вход
     const login = async (credentials) => {
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const foundUser = usersDB.value.find(u => u.email === credentials.email && u.password === credentials.password);
+        
+        if (!foundUser) throw new Error('Неверный логин');
 
-        // Ищем пользователя
-        const foundUser = usersDB.value.find(u => 
-            u.email === credentials.email && u.password === credentials.password
-        );
+        // Если старый юзер без данных - обновим его
+        if (!foundUser.limits || !foundUser.iban) {
+            const extra = generateCardData();
+            foundUser.limits = foundUser.limits || extra.limits;
+            foundUser.iban = foundUser.iban || extra.iban;
+            foundUser.card_number = foundUser.card_number || extra.cardNumber;
+            // Сохраняем обновление в базу
+            localStorage.setItem('users_db', JSON.stringify(usersDB.value));
+        }
 
-        if (foundUser) {
-            // Проверяем, есть ли у него карта и IBAN (для старых аккаунтов)
-            let needUpdate = false;
-            
-            // Если чего-то не хватает, генерируем данные
-            if (!foundUser.card_number || !foundUser.iban) {
-                const cardData = generateCardData(); // Генерируем один раз здесь
+        setUser(foundUser);
+    };
 
-                if (!foundUser.card_number) {
-                    foundUser.card_number = cardData.cardNumber;
-                    foundUser.card_cvv = cardData.cvv;
-                    foundUser.card_exp = cardData.expDate;
-                    needUpdate = true;
-                }
-                
-                if (!foundUser.iban) {
-                    foundUser.iban = cardData.iban;
-                    needUpdate = true;
-                }
-            }
+    // 🔥 ОБНОВЛЕНИЕ ЛИМИТОВ (Вот она!)
+    const updateLimits = async (newLimits) => {
+        // Имитация задержки
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-            // Если обновили данные старого юзера, сохраняем в "базу"
-            if (needUpdate) {
+        if (user.value) {
+            // 1. Обновляем текущего юзера
+            user.value.limits = newLimits;
+            localStorage.setItem('user', JSON.stringify(user.value));
+
+            // 2. Обновляем в базе всех юзеров
+            const idx = usersDB.value.findIndex(u => u.email === user.value.email);
+            if (idx !== -1) {
+                usersDB.value[idx].limits = newLimits;
                 localStorage.setItem('users_db', JSON.stringify(usersDB.value));
             }
-
-            setUser(foundUser);
-        } else {
-            throw new Error('Неверный логин или пароль');
         }
     };
 
-    const setUser = (userData) => {
-        user.value = userData;
-        token.value = 'mock-token-' + Date.now();
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', token.value);
+    // Вспомогательные
+    const setUser = (u) => {
+        user.value = u;
+        token.value = 'token';
+        localStorage.setItem('user', JSON.stringify(u));
+        localStorage.setItem('token', 'token');
     };
 
     const logout = () => {
@@ -119,25 +104,13 @@ export const useAuthStore = defineStore('auth', () => {
     };
 
     const makeTransfer = async (amount, phone) => {
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 500));
         if (user.value.balance < amount) throw new Error('Недостаточно средств');
         user.value.balance -= amount;
-        transactions.value.unshift({
-            id: Date.now(),
-            type: 'transfer',
-            description: `Перевод: ${phone}`,
-            amount: amount,
-            date: new Date().toLocaleString()
-        });
+        transactions.value.unshift({ id: Date.now(), type: 'transfer', description: `Перевод ${phone}`, amount, date: 'Сейчас' });
         localStorage.setItem('user', JSON.stringify(user.value));
-        
-        // Обновляем баланс в базе
-        const index = usersDB.value.findIndex(u => u.email === user.value.email);
-        if (index !== -1) {
-            usersDB.value[index].balance = user.value.balance;
-            localStorage.setItem('users_db', JSON.stringify(usersDB.value));
-        }
     };
 
-    return { user, token, transactions, login, register, logout, makeTransfer };
+    // 🔥 ВАЖНО: Возвращаем updateLimits наружу!
+    return { user, token, transactions, login, register, logout, makeTransfer, updateLimits };
 });
