@@ -171,9 +171,8 @@ const sendMessage = () => {
     });
 
     const userText = newMessage.value;
-    newMessage.value = ''; // Очистка поля
+    newMessage.value = ''; 
 
-    // Прокрутка вниз
     scrollToBottom();
 
     // 2. Имитация ответа оператора
@@ -191,7 +190,7 @@ const sendMessage = () => {
             time: getCurrentTime()
         });
         scrollToBottom();
-    }, 1500); // Задержка 1.5 сек
+    }, 1500); 
 };
 
 const scrollToBottom = async () => {
@@ -202,17 +201,24 @@ const scrollToBottom = async () => {
 
 <style scoped>
 .page-wrapper {
-    min-height: 100vh;
-    background-color: #f6f8fb;
-    font-family: 'Inter', sans-serif;
+  min-height: 100vh;
+  background-color: #f6f8fb;
+  font-family: 'Inter', sans-serif;
 }
-.header { z-index: 1000; }
-.back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+
+.header { 
+  z-index: 1000;
+}
+
+.back-btn { 
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+}
 
 /* ТАБЫ */
 .tabs-header {
     border-radius: 0 0 20px 20px;
 }
+
 .tab-item {
     width: 50%;
     text-align: center;
@@ -221,9 +227,11 @@ const scrollToBottom = async () => {
     cursor: pointer;
     transition: color 0.2s;
 }
+
 .tab-item.active {
     color: #004e92;
 }
+
 .active-line {
     position: absolute;
     bottom: 0;
@@ -235,12 +243,10 @@ const scrollToBottom = async () => {
     border-radius: 4px 4px 0 0;
 }
 
-/* КОНТЕНТ */
 .main-content {
-    padding-top: 140px; /* Отступ под два хедера (Top + Tabs) */
+    padding-top: 140px; 
 }
 
-/* Иконки уведомлений */
 .icon-circle {
     width: 45px; height: 45px;
     border-radius: 12px;
@@ -248,7 +254,6 @@ const scrollToBottom = async () => {
     font-size: 1.2rem;
 }
 
-/* ЧАТ */
 .msg-bubble {
     max-width: 80%;
     min-width: 100px;
@@ -259,7 +264,6 @@ const scrollToBottom = async () => {
     z-index: 1000;
 }
 
-/* Анимация точек набора */
 .typing-dots span {
     animation: typing 1.4s infinite ease-in-out both;
 }

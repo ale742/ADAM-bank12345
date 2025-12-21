@@ -1,7 +1,7 @@
 <template>
   <div class="home-wrapper">
     
-    <!-- 1. ВЕРХНЯЯ ЧАСТЬ (Хедер) -->
+    <!--ВЕРХНЯЯ ЧАСТЬ (Хедер)-->
     <header class="app-header bg-white shadow-sm fixed-top">
       <div class="container h-100 d-flex align-items-center justify-content-between py-3">
         

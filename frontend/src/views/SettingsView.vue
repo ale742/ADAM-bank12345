@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <!-- 🔥 ЗИМНИЙ МОД -->
+        <!--  ЗИМНИЙ МОД -->
         <div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
             <div class="d-flex align-items-center gap-3">
                 <div class="icon-box bg-info bg-opacity-10 text-info">

@@ -4,7 +4,7 @@
     <!-- Основной контент -->
     <router-view />
 
-    <!-- 🔥 СНЕГ (Показываем только если включен режим) -->
+    <!-- СНЕГ (Показываем только если включен режим) -->
     <div v-if="auth.isWinterMode" class="snow-container">
       <div v-for="n in 50" :key="n" class="snowflake" :style="getSnowStyle()">
         ❄
@@ -20,10 +20,10 @@ const auth = useAuthStore();
 
 // Генерация случайного стиля для каждой снежинки
 const getSnowStyle = () => {
-    const randomLeft = Math.random() * 100; // Позиция по ширине
-    const randomDuration = 3 + Math.random() * 5; // Скорость падения (3-8 сек)
-    const randomDelay = Math.random() * 5; // Задержка старта
-    const randomSize = 0.8 + Math.random() * 1.5; // Размер
+    const randomLeft = Math.random() * 100; 
+    const randomDuration = 3 + Math.random() * 5; 
+    const randomDelay = Math.random() * 5; 
+    const randomSize = 0.8 + Math.random() * 1.5; 
 
     return {
         left: `${randomLeft}%`,
@@ -35,21 +35,19 @@ const getSnowStyle = () => {
 </script>
 
 <style>
-/* Глобальные стили */
 body {
     background-color: #f6f8fb;
     margin: 0;
-    overflow-x: hidden; /* Чтобы снег не расширял экран */
+    overflow-x: hidden; 
 }
 
-/* Контейнер снега (поверх всего, но не мешает кликам) */
 .snow-container {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none; /* 🔥 ГЛАВНОЕ: клики проходят сквозь снег */
+    pointer-events: none; 
     z-index: 9999;
     overflow: hidden;
 }
@@ -57,7 +55,7 @@ body {
 .snowflake {
     position: absolute;
     top: -50px;
-    color: #a4d8ff; /* Голубоватый цвет */
+    color: #a4d8ff; 
     opacity: 0.8;
     animation: fall linear infinite;
     text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);

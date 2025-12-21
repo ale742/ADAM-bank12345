@@ -78,7 +78,7 @@
           </div>
         </div>
 
-        <!-- 🔥 БЛОК ПАРОЛЯ С ГЛАЗИКОМ -->
+        <!-- БЛОК ПАРОЛЯ С ГЛАЗИКОМ -->
         <div class="mb-2">
           <label class="form-label">Пароль <span class="text-danger">*</span></label>
           <div class="input-group">
@@ -150,7 +150,7 @@ import { useAuthStore } from '../stores/auth';
 import { useRouter } from 'vue-router';
 
 const isRegister = ref(false);
-const showPassword = ref(false); // 🔥 Переменная для глазика
+const showPassword = ref(false); 
 const auth = useAuthStore();
 const router = useRouter();
 
@@ -230,7 +230,7 @@ const handleSubmit = async () => {
             alert('✅ Регистрация успешна! Теперь войдите, используя свои данные.');
             isRegister.value = false;
             form.password = '';
-            showPassword.value = false; // Скрываем пароль после регистрации
+            showPassword.value = false;
         } else {
             await auth.login(form);
             router.push('/');
@@ -285,18 +285,16 @@ const handleSubmit = async () => {
     border: 1px solid #ced4da;
 }
 
-/* Скругление для первого элемента */
 .input-group-text:first-child {
     border-radius: 10px 0 0 10px;
 }
 
-/* Скругление для последнего элемента (глазика) */
 .input-group-text:last-child {
     border-radius: 0 10px 10px 0;
 }
 
 .form-control {
-    border-radius: 0; /* Убираем скругление у инпута, так как он теперь посередине */
+    border-radius: 0; 
     padding: 12px;
     font-size: 1rem;
 }
@@ -304,7 +302,7 @@ const handleSubmit = async () => {
 .form-control:focus {
     box-shadow: none;
     border-color: #86b7fe;
-    z-index: 1; /* Чтобы рамка при фокусе была выше соседей */
+    z-index: 1; 
 }
 
 .form-label {

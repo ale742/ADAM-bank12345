@@ -6,7 +6,7 @@ export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);
     const usersDB = ref(JSON.parse(localStorage.getItem('users_db')) || []);
 
-    // 🔥 ЗИМНИЙ МОД (Читаем настройку из памяти)
+    //ЗИМНИЙ МОД
     const isWinterMode = ref(localStorage.getItem('winter_mode') === 'true');
 
     const transactions = ref([
@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
         { id: 2, type: 'transfer_in', description: 'Пополнение', amount: 5000, date: '2025-12-18 10:00' },
     ]);
 
-    // --- ГЕНЕРАТОР ДАННЫХ ---
+    //ГЕНЕРАТОР ДАННЫХ
     const generateCardData = () => {
         let cardNumber = '8400';
         for (let i = 0; i < 3; i++) {
@@ -40,7 +40,7 @@ export const useAuthStore = defineStore('auth', () => {
         return { cardNumber, cvv, expDate, iban, limits, isBlocked: false };
     };
 
-    // --- РЕГИСТРАЦИЯ ---
+    //РЕГИСТРАЦИЯ
     const register = async (credentials) => {
         await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -57,7 +57,7 @@ export const useAuthStore = defineStore('auth', () => {
             password: credentials.password,
             balance: 10000,
             
-            // Данные карты
+            //Данные карты
             card_number: cardData.cardNumber,
             card_cvv: cardData.cvv,
             card_exp: cardData.expDate,
@@ -70,7 +70,7 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('users_db', JSON.stringify(usersDB.value));
     };
 
-    // --- ВХОД ---
+    //ВХОД
     const login = async (credentials) => {
         await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -79,7 +79,7 @@ export const useAuthStore = defineStore('auth', () => {
         );
 
         if (foundUser) {
-            // Восстановление данных для старых юзеров
+            //Восстановление данных для старых юзеров
             if (!foundUser.card_cvv || !foundUser.card_number || foundUser.isBlocked === undefined) {
                 const cardData = generateCardData();
                 foundUser.card_number = foundUser.card_number || cardData.cardNumber;
@@ -97,13 +97,13 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    // 🔥 ПЕРЕКЛЮЧАТЕЛЬ ЗИМНЕГО МОДА
+    //ПЕРЕКЛЮЧАТЕЛЬ ЗИМНЕГО МОДА
     const toggleWinterMode = () => {
         isWinterMode.value = !isWinterMode.value;
         localStorage.setItem('winter_mode', isWinterMode.value);
     };
 
-    // Блокировка карты
+    //Блокировка карты
     const toggleBlockCard = async () => {
         await new Promise(resolve => setTimeout(resolve, 300));
         if (user.value) {
@@ -112,7 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    // Обновление лимитов
+    //Обновление лимитов
     const updateLimits = async (newLimits) => {
         await new Promise(resolve => setTimeout(resolve, 500));
         if (user.value) {
@@ -121,7 +121,7 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    // Общая функция сохранения в базу
+    //Общая функция сохранения в базу
     const updateUserInDB = () => {
         localStorage.setItem('user', JSON.stringify(user.value));
         const idx = usersDB.value.findIndex(u => u.email === user.value.email);

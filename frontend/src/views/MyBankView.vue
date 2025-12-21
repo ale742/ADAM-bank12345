@@ -41,7 +41,7 @@
                 </div>
             </div>
 
-            <!-- 🔥 НОМЕР КАРТЫ (ИСПРАВЛЕНО) -->
+            <!-- НОМЕР КАРТЫ (ИСПРАВЛЕНО) -->
             <div class="position-relative z-1 mb-4 d-flex align-items-center justify-content-between">
                 <h4 class="font-monospace text-shadow mb-0 card-number">
                     {{ showCardNumber ? (auth.user?.card_number || '8400 1234 5678 9012') : maskedCardNumber }}
@@ -82,7 +82,7 @@
                   <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center">
                       <i class="bi bi-plus-lg me-2"></i> Пополнить
                   </button>
-                  <!-- 🔥 КНОПКА CVV (ИСПРАВЛЕНО) -->
+                  <!-- КНОПКА CVV (ИСПРАВЛЕНО) -->
                   <button class="btn btn-light text-dark rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center" @click="showCVV = !showCVV">
                       <i class="bi me-2" :class="showCVV ? 'bi-eye-slash' : 'bi-eye'"></i>
                       <!-- Если нажато: показываем card_cvv. Если его нет — показываем 000. Если не нажато — текст CVV -->
@@ -140,7 +140,7 @@
 
     </div>
 
-    <!-- 🔥 МОДАЛКА РЕКВИЗИТОВ (БЕЗ ИИН) -->
+    <!-- МОДАЛКА РЕКВИЗИТОВ (БЕЗ ИИН) -->
     <Transition name="slide-fade">
         <div v-if="showRequisites" class="modal-overlay" @click.self="showRequisites = false">
             <div class="modal-content bg-white rounded-top-4 p-4">
@@ -235,7 +235,7 @@ const showCVV = ref(false);
 const showCardNumber = ref(false);
 const showRequisites = ref(false);
 const showLimits = ref(false);
-const isSaving = ref(false); // Для кнопки лимитов
+const isSaving = ref(false); 
 
 const localLimits = reactive({ internet: true, internet_limit: 0, cash_limit: 0, transfer_limit: 0 });
 
@@ -278,7 +278,6 @@ const maskedCardNumber = computed(() => {
     const num = auth.user?.card_number;
     if (!num) return '8400 •••• •••• ••••';
     const parts = num.split(' ');
-    // Проверка, что parts не пустой и имеет длину
     if (parts && parts.length === 4) {
         return `${parts[0]} •••• •••• ${parts[3]}`; 
     }
