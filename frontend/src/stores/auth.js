@@ -11,25 +11,29 @@ export const useAuthStore = defineStore('auth', () => {
         { id: 2, type: 'transfer_in', description: 'Пополнение', amount: 5000, date: '2025-12-18 10:00' },
     ]);
 
-    // --- ГЕНЕРАТОР КАРТЫ ---
+    // --- ГЕНЕРАТОР КАРТЫ И IBAN ---
     const generateCardData = () => {
-        // 1. Номер карты: 8400 + 12 рандомных цифр
+        // 1. Номер карты
         let cardNumber = '8400';
         for (let i = 0; i < 3; i++) {
-            const block = Math.floor(1000 + Math.random() * 9000); // Случайное число от 1000 до 9999
+            const block = Math.floor(1000 + Math.random() * 9000);
             cardNumber += ` ${block}`;
         }
 
-        // 2. CVV: 3 случайные цифры
+        // 2. CVV
         const cvv = Math.floor(100 + Math.random() * 900);
 
-        // 3. Срок действия: Сегодня + 3 года (Формат MM/YY)
+        // 3. Срок действия
         const date = new Date();
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = (date.getFullYear() + 3).toString().slice(-2); // Берем последние 2 цифры года
+        const year = (date.getFullYear() + 3).toString().slice(-2);
         const expDate = `${month}/${year}`;
 
-        return { cardNumber, cvv, expDate };
+        // 4. IBAN
+        const randomIbanSuffix = Math.floor(1000000000 + Math.random() * 9000000000);
+        const iban = `KZ99ADAM${randomIbanSuffix}`;
+
+        return { cardNumber, cvv, expDate, iban };
     };
 
     // --- РЕГИСТРАЦИЯ ---
@@ -37,9 +41,9 @@ export const useAuthStore = defineStore('auth', () => {
         await new Promise(resolve => setTimeout(resolve, 800));
 
         const exists = usersDB.value.find(u => u.email === credentials.email);
-        if (exists) throw new Error('Пользователь уже существует!');
+        if (exists) throw new Error('Пользователь с таким Email уже существует!');
 
-        // Генерируем данные карты
+        // Генерируем данные
         const cardData = generateCardData();
 
         const newUser = {
@@ -49,32 +53,51 @@ export const useAuthStore = defineStore('auth', () => {
             phone: credentials.phone,
             password: credentials.password,
             balance: 10000,
-            // Добавляем данные карты в профиль
             card_number: cardData.cardNumber,
             card_cvv: cardData.cvv,
-            card_exp: cardData.expDate
+            card_exp: cardData.expDate,
+            iban: cardData.iban
         };
 
         usersDB.value.push(newUser);
         localStorage.setItem('users_db', JSON.stringify(usersDB.value));
     };
 
-    // --- ВХОД ---
+    // --- ВХОД (ИСПРАВЛЕНО) ---
     const login = async (credentials) => {
         await new Promise(resolve => setTimeout(resolve, 800));
 
+        // Ищем пользователя
         const foundUser = usersDB.value.find(u => 
             u.email === credentials.email && u.password === credentials.password
         );
 
         if (foundUser) {
-            // Если у старого юзера нет карты (создавали раньше), сгенерируем на лету
-            if (!foundUser.card_number) {
-                const cardData = generateCardData();
-                foundUser.card_number = cardData.cardNumber;
-                foundUser.card_cvv = cardData.cvv;
-                foundUser.card_exp = cardData.expDate;
+            // Проверяем, есть ли у него карта и IBAN (для старых аккаунтов)
+            let needUpdate = false;
+            
+            // Если чего-то не хватает, генерируем данные
+            if (!foundUser.card_number || !foundUser.iban) {
+                const cardData = generateCardData(); // Генерируем один раз здесь
+
+                if (!foundUser.card_number) {
+                    foundUser.card_number = cardData.cardNumber;
+                    foundUser.card_cvv = cardData.cvv;
+                    foundUser.card_exp = cardData.expDate;
+                    needUpdate = true;
+                }
+                
+                if (!foundUser.iban) {
+                    foundUser.iban = cardData.iban;
+                    needUpdate = true;
+                }
             }
+
+            // Если обновили данные старого юзера, сохраняем в "базу"
+            if (needUpdate) {
+                localStorage.setItem('users_db', JSON.stringify(usersDB.value));
+            }
+
             setUser(foundUser);
         } else {
             throw new Error('Неверный логин или пароль');
@@ -107,6 +130,13 @@ export const useAuthStore = defineStore('auth', () => {
             date: new Date().toLocaleString()
         });
         localStorage.setItem('user', JSON.stringify(user.value));
+        
+        // Обновляем баланс в базе
+        const index = usersDB.value.findIndex(u => u.email === user.value.email);
+        if (index !== -1) {
+            usersDB.value[index].balance = user.value.balance;
+            localStorage.setItem('users_db', JSON.stringify(usersDB.value));
+        }
     };
 
     return { user, token, transactions, login, register, logout, makeTransfer };
