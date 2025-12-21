@@ -14,7 +14,17 @@
       
       <!-- 1. КАРТА -->
       <div class="card-container mb-4 animate__animated animate__fadeInDown">
-        <div class="bank-card p-4 shadow-lg text-white position-relative overflow-hidden">
+        <div class="bank-card p-4 shadow-lg text-white position-relative overflow-hidden" 
+             :class="{ 'card-frozen': auth.user?.isBlocked }">
+            
+            <!-- Оверлей блокировки -->
+            <div v-if="auth.user?.isBlocked" class="frozen-overlay d-flex flex-column align-items-center justify-content-center">
+                <div class="lock-icon-circle mb-2">
+                    <i class="bi bi-lock-fill fs-1"></i>
+                </div>
+                <h5 class="fw-bold m-0">ЗАБЛОКИРОВАНА</h5>
+            </div>
+
             <div class="card-bg"></div>
             <div class="card-noise"></div>
 
@@ -31,12 +41,13 @@
                 </div>
             </div>
 
-            <!-- Номер карты -->
+            <!-- 🔥 НОМЕР КАРТЫ (ИСПРАВЛЕНО) -->
             <div class="position-relative z-1 mb-4 d-flex align-items-center justify-content-between">
                 <h4 class="font-monospace text-shadow mb-0 card-number">
-                    {{ showCardNumber ? (auth.user?.card_number || '8400 0000 0000 0000') : maskedCardNumber }}
+                    {{ showCardNumber ? (auth.user?.card_number || '8400 1234 5678 9012') : maskedCardNumber }}
                 </h4>
-                <div @click="showCardNumber = !showCardNumber" class="eye-btn">
+                <!-- Глазик работает только если карта не заблочена -->
+                <div @click="!auth.user?.isBlocked && (showCardNumber = !showCardNumber)" class="eye-btn">
                     <i class="bi" :class="showCardNumber ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
                 </div>
             </div>
@@ -44,7 +55,7 @@
             <div class="d-flex justify-content-between align-items-end position-relative z-1">
                 <div>
                     <small class="text-white-50 d-block" style="font-size: 0.6rem;">CARD HOLDER</small>
-                    <span class="fw-bold text-uppercase" style="letter-spacing: 1px;">{{ auth.user?.name }}</span>
+                    <span class="fw-bold text-uppercase" style="letter-spacing: 1px;">{{ auth.user?.name || 'NAME SURNAME' }}</span>
                 </div>
                 <div class="text-end">
                     <small class="text-white-50 d-block" style="font-size: 0.6rem;">VALID THRU</small>
@@ -71,9 +82,11 @@
                   <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center">
                       <i class="bi bi-plus-lg me-2"></i> Пополнить
                   </button>
+                  <!-- 🔥 КНОПКА CVV (ИСПРАВЛЕНО) -->
                   <button class="btn btn-light text-dark rounded-pill px-4 fw-bold shadow-sm d-flex align-items-center" @click="showCVV = !showCVV">
                       <i class="bi me-2" :class="showCVV ? 'bi-eye-slash' : 'bi-eye'"></i>
-                      {{ showCVV ? auth.user?.card_cvv : 'CVV' }}
+                      <!-- Если нажато: показываем card_cvv. Если его нет — показываем 000. Если не нажато — текст CVV -->
+                      {{ showCVV ? (auth.user?.card_cvv || '000') : 'CVV' }}
                   </button>
               </div>
           </div>
@@ -83,25 +96,25 @@
       <!-- 3. КНОПКИ УПРАВЛЕНИЯ -->
       <h6 class="fw-bold text-muted mb-3 ps-2">Управление</h6>
       <div class="row g-2 mb-4">
-          <!-- Кнопка Реквизиты -->
+          <!-- Реквизиты -->
           <div class="col-4" @click="showRequisites = true">
               <div class="p-3 bg-white rounded-4 shadow-sm text-center action-card h-100 d-flex flex-column justify-content-center cursor-pointer">
                   <i class="bi bi-file-text fs-3 text-primary mb-2"></i>
                   <small class="fw-bold text-dark">Реквизиты</small>
               </div>
           </div>
-          <!-- Кнопка Лимиты -->
+          <!-- Лимиты -->
           <div class="col-4" @click="showLimits = true">
               <div class="p-3 bg-white rounded-4 shadow-sm text-center action-card h-100 d-flex flex-column justify-content-center cursor-pointer">
                   <i class="bi bi-gear fs-3 text-primary mb-2"></i>
                   <small class="fw-bold text-dark">Лимиты</small>
               </div>
           </div>
-          <!-- Кнопка Блок -->
+          <!-- БЛОК -->
           <div class="col-4">
-              <div class="p-3 bg-white rounded-4 shadow-sm text-center action-card h-100 d-flex flex-column justify-content-center cursor-pointer">
-                  <i class="bi bi-lock fs-3 text-danger mb-2"></i>
-                  <small class="fw-bold text-dark">Блок</small>
+              <div class="p-3 bg-white rounded-4 shadow-sm text-center action-card h-100 d-flex flex-column justify-content-center cursor-pointer" @click="toggleBlock">
+                  <i class="bi fs-3 mb-2" :class="auth.user?.isBlocked ? 'bi-unlock-fill text-success' : 'bi-lock fs-3 text-danger'"></i>
+                  <small class="fw-bold text-dark">{{ auth.user?.isBlocked ? 'Разблок.' : 'Блок' }}</small>
               </div>
           </div>
       </div>
@@ -127,65 +140,34 @@
 
     </div>
 
-    <!-- 🔥 ШТОРКА РЕКВИЗИТОВ (Bottom Sheet) -->
+    <!-- 🔥 МОДАЛКА РЕКВИЗИТОВ (БЕЗ ИИН) -->
     <Transition name="slide-fade">
         <div v-if="showRequisites" class="modal-overlay" @click.self="showRequisites = false">
             <div class="modal-content bg-white rounded-top-4 p-4">
-                
                 <div class="modal-handle mx-auto mb-4 bg-secondary bg-opacity-25 rounded-pill"></div>
-
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold m-0">Реквизиты карты</h5>
-                    <div class="btn btn-light rounded-circle btn-sm" @click="showRequisites = false">
-                        <i class="bi bi-x-lg"></i>
-                    </div>
+                    <h5 class="fw-bold m-0">Реквизиты счета</h5>
+                    <div class="btn btn-light rounded-circle btn-sm" @click="showRequisites = false"><i class="bi bi-x-lg"></i></div>
                 </div>
-
                 <div class="requisites-list">
-                    <!-- Банк -->
+                    <div class="mb-3 border-bottom pb-2"><small class="text-muted d-block mb-1">Банк получатель</small><div class="fw-bold fs-5">АО ADAM-BANK</div></div>
+                    <div class="mb-3 border-bottom pb-2"><small class="text-muted d-block mb-1">БИК</small><div class="fw-bold fs-5">ADAMKZKX</div></div>
                     <div class="mb-3 border-bottom pb-2">
-                        <small class="text-muted d-block mb-1">Банк получатель</small>
-                        <div class="fw-bold fs-5">АО ADAM-BANK</div>
-                    </div>
-                    
-                    <!-- БИК -->
-                    <div class="mb-3 border-bottom pb-2">
-                        <small class="text-muted d-block mb-1">БИК (BIC)</small>
-                        <div class="fw-bold fs-5">ADAMKZKX</div>
-                    </div>
-                    
-                    <!-- IBAN -->
-                    <div class="mb-3 border-bottom pb-2">
-                        <small class="text-muted d-block mb-1">IBAN (Номер счета)</small>
+                        <small class="text-muted d-block mb-1">IBAN</small>
                         <div class="d-flex align-items-center justify-content-between">
-                            <div class="fw-bold text-break me-2 fs-6 text-primary">{{ auth.user?.iban || 'KZ99ADAM...' }}</div>
-                            <button class="btn btn-light btn-sm text-primary rounded-pill" @click="copyToClipboard(auth.user?.iban)">
-                                <i class="bi bi-copy"></i>
-                            </button>
+                            <div class="fw-bold text-break me-2">{{ auth.user?.iban || 'KZ99ADAM...' }}</div>
+                            <i class="bi bi-copy text-primary fs-4 cursor-pointer" @click="copyToClipboard(auth.user?.iban)"></i>
                         </div>
                     </div>
-                    
-                    <!-- Клиент -->
-                    <div class="mb-3 border-bottom pb-2">
-                        <small class="text-muted d-block mb-1">Получатель</small>
-                        <div class="fw-bold fs-5 text-uppercase">{{ auth.user?.name }}</div>
-                    </div>
-
-                    <!-- ИИН -->
-                    <div class="mb-3">
-                        <small class="text-muted d-block mb-1">ИИН</small>
-                        <div class="fw-bold text-muted">990101550011</div>
-                    </div>
+                    <!-- ИИН УБРАЛИ -->
+                    <div class="mb-3"><small class="text-muted d-block mb-1">Клиент</small><div class="fw-bold fs-5">{{ auth.user?.name }}</div></div>
                 </div>
-
-                <button class="btn btn-primary w-100 rounded-pill py-3 fw-bold mt-2 shadow-sm" @click="copyAll">
-                    <i class="bi bi-share-fill me-2"></i> Копировать всё
-                </button>
+                <button class="btn btn-primary w-100 rounded-pill py-3 fw-bold mt-2" @click="copyAll">Копировать реквизиты</button>
             </div>
         </div>
     </Transition>
 
-    <!-- 🔥 ШТОРКА ЛИМИТОВ -->
+    <!-- МОДАЛКА ЛИМИТОВ -->
     <Transition name="slide-fade">
         <div v-if="showLimits" class="modal-overlay" @click.self="showLimits = false">
             <div class="modal-content bg-white rounded-top-4 p-4">
@@ -233,14 +215,10 @@
                     <input type="range" class="form-range custom-range" min="0" max="2000000" step="10000" v-model="localLimits.transfer_limit">
                 </div>
 
-                <button 
-                    class="btn btn-primary w-100 rounded-pill py-3 fw-bold mt-2" 
-                    @click="saveLimits"
-                    :disabled="isSaving"
-                    >
+                <button class="btn btn-primary w-100 rounded-pill py-3 fw-bold mt-2" @click="saveLimits" :disabled="isSaving">
                     <span v-if="isSaving" class="spinner-border spinner-border-sm me-2"></span>
                     {{ isSaving ? 'Сохранение...' : 'Сохранить изменения' }}
-</button>
+                </button>
             </div>
         </div>
     </Transition>
@@ -257,7 +235,7 @@ const showCVV = ref(false);
 const showCardNumber = ref(false);
 const showRequisites = ref(false);
 const showLimits = ref(false);
-const isSaving = ref(false); // Состояние загрузки
+const isSaving = ref(false); // Для кнопки лимитов
 
 const localLimits = reactive({ internet: true, internet_limit: 0, cash_limit: 0, transfer_limit: 0 });
 
@@ -271,7 +249,7 @@ watch(showLimits, (val) => {
 });
 
 const saveLimits = async () => {
-    isSaving.value = true; // Включаем крутилку
+    isSaving.value = true;
     try {
         await auth.updateLimits({ ...localLimits });
         showLimits.value = false;
@@ -279,7 +257,15 @@ const saveLimits = async () => {
     } catch (e) {
         alert('Ошибка сохранения');
     } finally {
-        isSaving.value = false; // Выключаем крутилку
+        isSaving.value = false;
+    }
+};
+
+// Блокировка карты
+const toggleBlock = async () => {
+    const action = auth.user?.isBlocked ? 'Разблокировать' : 'Заблокировать';
+    if(confirm(`Вы уверены, что хотите ${action} карту?`)) {
+        await auth.toggleBlockCard();
     }
 };
 
@@ -292,23 +278,19 @@ const maskedCardNumber = computed(() => {
     const num = auth.user?.card_number;
     if (!num) return '8400 •••• •••• ••••';
     const parts = num.split(' ');
-    if (parts.length === 4) return `${parts[0]} •••• •••• ${parts[3]}`; 
+    // Проверка, что parts не пустой и имеет длину
+    if (parts && parts.length === 4) {
+        return `${parts[0]} •••• •••• ${parts[3]}`; 
+    }
     return '8400 •••• •••• ••••';
 });
 
 const copyToClipboard = (text) => {
-    if(text) { navigator.clipboard.writeText(text); alert('Скопировано в буфер!'); }
+    if(text) { navigator.clipboard.writeText(text); alert('Скопировано!'); }
 };
 
 const copyAll = () => {
-    const text = `
-    Реквизиты карты ADAM BANK:
-    Банк: АО ADAM-BANK
-    БИК: ADAMKZKX
-    IBAN: ${auth.user?.iban}
-    Получатель: ${auth.user?.name}
-    `.trim();
-    
+    const text = `Банк: АО ADAM-BANK\nБИК: ADAMKZKX\nIBAN: ${auth.user?.iban}\nФИО: ${auth.user?.name}`;
     navigator.clipboard.writeText(text);
     alert('Все реквизиты скопированы!');
     showRequisites.value = false;
@@ -319,7 +301,6 @@ const copyAll = () => {
 .page-wrapper { min-height: 100vh; background-color: #f6f8fb; font-family: 'Inter', sans-serif; }
 .header { z-index: 1000; }
 .back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
-
 .card-container { perspective: 1000px; }
 .bank-card { border-radius: 20px; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); min-height: 220px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
 .card-noise { position: absolute; top:0; left:0; width:100%; height:100%; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"); pointer-events: none; }
@@ -346,15 +327,22 @@ const copyAll = () => {
 .action-card:active { transform: scale(0.95); }
 .ls-1 { letter-spacing: 1px; }
 
-/* Шторка (Modal) */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: flex-end; }
-.modal-content { width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,0,0,0.3); position: relative; }
-.modal-handle { width: 50px; height: 5px; }
+/* Стиль блокировки */
+.card-frozen { filter: grayscale(100%); transition: all 0.3s ease; }
+.frozen-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 10; backdrop-filter: blur(2px); color: white; }
+.lock-icon-circle { width: 60px; height: 60px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; }
+
+/* Шторка */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2000; display: flex; align-items: flex-end; justify-content: center; }
+.modal-content { width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto; box-shadow: 0 -10px 40px rgba(0,0,0,0.3); position: relative; border-radius: 20px 20px 0 0; }
+@media (min-width: 576px) { .modal-overlay { align-items: center; } .modal-content { border-radius: 20px; max-height: 90vh; } }
+.modal-handle { width: 50px; height: 5px; background-color: #dee2e6; margin: 0 auto 20px auto; border-radius: 10px; }
 .slide-fade-enter-active, .slide-fade-leave-active { transition: opacity 0.3s ease; }
 .slide-fade-enter-from, .slide-fade-leave-to { opacity: 0; }
 .slide-fade-enter-active .modal-content { transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
 .slide-fade-leave-active .modal-content { transition: transform 0.2s ease-in; }
 .slide-fade-enter-from .modal-content, .slide-fade-leave-to .modal-content { transform: translateY(100%); }
+@media (min-width: 576px) { .slide-fade-enter-from .modal-content, .slide-fade-leave-to .modal-content { transform: scale(0.95); opacity: 0; } }
 .cursor-pointer { cursor: pointer; }
 .icon-small { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; }
 .custom-range::-webkit-slider-thumb { background: #004e92; }
