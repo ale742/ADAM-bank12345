@@ -6,6 +6,9 @@ export const useAuthStore = defineStore('auth', () => {
     const token = ref(localStorage.getItem('token') || null);
     const usersDB = ref(JSON.parse(localStorage.getItem('users_db')) || []);
 
+    // 🔥 ЗИМНИЙ МОД (Читаем настройку из памяти)
+    const isWinterMode = ref(localStorage.getItem('winter_mode') === 'true');
+
     const transactions = ref([
         { id: 1, type: 'shop', description: 'Magnum', amount: 2500, date: '2025-12-19 14:30' },
         { id: 2, type: 'transfer_in', description: 'Пополнение', amount: 5000, date: '2025-12-18 10:00' },
@@ -60,7 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
             card_exp: cardData.expDate,
             iban: cardData.iban,
             limits: cardData.limits,
-            isBlocked: false // 🔥 Блокировка по умолчанию выключена
+            isBlocked: false 
         };
 
         usersDB.value.push(newUser);
@@ -94,7 +97,13 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    // 🔥 ФУНКЦИЯ БЛОКИРОВКИ (Я ЕЁ ВЕРНУЛ!)
+    // 🔥 ПЕРЕКЛЮЧАТЕЛЬ ЗИМНЕГО МОДА
+    const toggleWinterMode = () => {
+        isWinterMode.value = !isWinterMode.value;
+        localStorage.setItem('winter_mode', isWinterMode.value);
+    };
+
+    // Блокировка карты
     const toggleBlockCard = async () => {
         await new Promise(resolve => setTimeout(resolve, 300));
         if (user.value) {
@@ -139,7 +148,6 @@ export const useAuthStore = defineStore('auth', () => {
     const makeTransfer = async (amount, phone) => {
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        // 🔥 Проверка блокировки перед переводом
         if (user.value.isBlocked) throw new Error('Карта заблокирована! Операции недоступны.');
 
         if (user.value.balance < amount) throw new Error('Недостаточно средств');
@@ -149,5 +157,9 @@ export const useAuthStore = defineStore('auth', () => {
         updateUserInDB();
     };
 
-    return { user, token, transactions, login, register, logout, makeTransfer, updateLimits, toggleBlockCard };
+    return { 
+        user, token, transactions, 
+        isWinterMode, toggleWinterMode, // Экспортируем зимний мод
+        login, register, logout, makeTransfer, updateLimits, toggleBlockCard 
+    };
 });

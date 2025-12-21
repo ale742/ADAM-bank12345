@@ -33,6 +33,26 @@
             </div>
         </div>
 
+        <!-- 🔥 ЗИМНИЙ МОД -->
+        <div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
+            <div class="d-flex align-items-center gap-3">
+                <div class="icon-box bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-snow2 fs-5"></i>
+                </div>
+                <span class="fw-bold">Зимний мод</span>
+            </div>
+            <div class="form-check form-switch">
+                <!-- Привязываем к стору -->
+                <input 
+                    class="form-check-input" 
+                    type="checkbox" 
+                    :checked="auth.isWinterMode" 
+                    @change="auth.toggleWinterMode"
+                    style="transform: scale(1.2); cursor: pointer;"
+                >
+            </div>
+        </div>
+
         <!-- Тема -->
         <div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
             <div class="d-flex align-items-center gap-3">
