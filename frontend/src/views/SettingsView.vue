@@ -52,19 +52,7 @@
                 >
             </div>
         </div>
-
-        <!-- Тема -->
-        <div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
-            <div class="d-flex align-items-center gap-3">
-                <div class="icon-box bg-dark bg-opacity-10 text-dark"><i class="bi bi-moon-fill fs-5"></i></div>
-                <span class="fw-bold">Темная тема</span>
-            </div>
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" style="transform: scale(1.2);">
-            </div>
         </div>
-
-      </div>
 
       <!-- 3. КНОПКА ВЫХОДА -->
       <button 
