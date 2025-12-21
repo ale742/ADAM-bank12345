@@ -9,6 +9,7 @@ import GovView from '../views/GovView.vue'
 import ServicesView from '../views/ServicesView.vue'
 import QRView from '../views/QRView.vue'
 import PaymentsView from '../views/PaymentsView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 
 const router = createRouter({
@@ -24,7 +25,7 @@ const router = createRouter({
     { path: '/services', name: 'services', component: ServicesView },
     { path: '/qr', name: 'qr', component: QRView },
     { path: '/payments', name: 'payments', component: PaymentsView },
-
+    { path: '/settings', name: 'settings', component: SettingsView },
   ]
 })
 
