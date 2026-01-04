@@ -2,50 +2,47 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // <--- 1. ВОТ ЭТО ВАЖНЫЙ ИМПОРТ
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    // 2. И ВОТ ТУТ МЫ ЕГО ПОДКЛЮЧАЕМ (HasApiTokens)
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
+     * Список полей, которые можно заполнять массово.
      */
-protected $fillable = [
+    protected $fillable = [
         'name',
-        'phone', // <--- ДОБАВЬ СЮДА
         'email',
+        'phone',
         'password',
         'balance',
+        'card_number',
+        'card_cvv',
+        'card_exp',
+        'iban',
+        'is_blocked',
+        'limits', // JSON поле
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
+     /**
+     * Автоматическое преобразование типов.
      */
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_blocked' => 'boolean', // Ларавел сам будет делать true/false
+            'limits' => 'array',       // JSON из базы превратится в массив PHP
         ];
     }
 }

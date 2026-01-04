@@ -15,17 +15,22 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-
-            // ДОБАВИЛИ ТЕЛЕФОН (Обязательно уникальный)
-            $table->string('phone')->unique();
-
             $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
+            $table->string('phone')->unique(); // Телефон
             $table->string('password');
 
-            // Баланс
-            $table->decimal('balance', 10, 2)->default(0);
+            // 🔥 БАНКОВСКИЕ ДАННЫЕ
+            $table->decimal('balance', 15, 2)->default(10000); // Баланс
+            $table->string('card_number')->nullable(); // Номер карты
+            $table->string('card_cvv')->nullable();    // CVV
+            $table->string('card_exp')->nullable();    // Срок действия
+            $table->string('iban')->nullable();        // IBAN
 
+            // 🔥 СТАТУСЫ И НАСТРОЙКИ
+            $table->boolean('is_blocked')->default(false); // Блокировка
+            $table->json('limits')->nullable(); // Лимиты
+
+            $table->timestamp('email_verified_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

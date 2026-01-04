@@ -12,7 +12,7 @@
           </div>
         </div>
 
-        <!-- Поиск -->
+        <!-- Поискывапдыватптоывщшатпщшыватщшгптывщаштьпщшдватьщ-->
         <div class="search-bar flex-grow-1 mx-3 md-mx-5">
           <div class="input-group">
             <span class="input-group-text bg-light border-0 rounded-start-pill ps-3">

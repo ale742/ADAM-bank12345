@@ -1,5 +1,6 @@
 <template>
   <div class="page-wrapper">
+    
     <!-- Хедер -->
     <div class="header d-flex align-items-center px-4 py-3 bg-white shadow-sm fixed-top">
       <router-link to="/" class="btn btn-light rounded-circle shadow-sm me-3 back-btn">
@@ -10,6 +11,7 @@
 
     <!-- Контент -->
     <div class="container main-content pb-5">
+      
       <!-- Поиск -->
       <div class="search-wrapper mb-4 animate__animated animate__fadeInDown">
         <div class="input-group input-group-lg shadow-sm rounded-4 overflow-hidden">
@@ -54,30 +56,40 @@
           </div>
       </div>
 
-      <!-- Популярное -->
+      <!-- 🔥 ПОПУЛЯРНОЕ (ТЕПЕРЬ ДИНАМИЧЕСКИ ИЗ БАЗЫ) -->
       <h6 class="text-muted small fw-bold mb-3 ps-1 animate__animated animate__fadeIn delay-2">ПОПУЛЯРНОЕ</h6>
       <div class="list-group rounded-4 shadow-sm border-0 bg-white animate__animated animate__fadeInUp delay-2">
-          <div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
+          
+          <div v-for="service in services" :key="service.id" class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
               <div class="d-flex align-items-center gap-3">
-                  <div class="provider-logo rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center text-warning fw-bold border">B</div>
-                  <div><h6 class="mb-0 fw-bold">Beeline</h6><small class="text-muted">Мобильная связь</small></div>
+                  <!-- Логотип сервиса -->
+                  <div class="provider-logo rounded-circle bg-light d-flex align-items-center justify-content-center text-primary fw-bold border">
+                      <!-- Если есть иконка - показываем, иначе первую букву -->
+                      <i v-if="service.icon" :class="service.icon" class="fs-5"></i>
+                      <span v-else>{{ service.name[0] }}</span>
+                  </div>
+                  <div>
+                      <h6 class="mb-0 fw-bold">{{ service.name }}</h6>
+                      <small class="text-muted">{{ service.category }}</small>
+                  </div>
               </div>
               <i class="bi bi-chevron-right text-muted"></i>
           </div>
-          <div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
-              <div class="d-flex align-items-center gap-3">
-                  <div class="provider-logo rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center text-primary fw-bold border">K</div>
-                  <div><h6 class="mb-0 fw-bold">Казахтелеком</h6><small class="text-muted">Интернет и ТВ</small></div>
-              </div>
-              <i class="bi bi-chevron-right text-muted"></i>
+
+          <!-- Заглушка, если база пустая -->
+          <div v-if="services.length === 0" class="p-4 text-center text-muted">
+              Загрузка сервисов...
           </div>
+
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import axios from '../axios';
+
 const categories = ref([
     { name: 'Мобильный', icon: 'bi bi-phone', bgClass: 'bg-danger bg-opacity-10 text-danger' },
     { name: 'Коммуналка', icon: 'bi bi-house', bgClass: 'bg-warning bg-opacity-10 text-warning' },
@@ -86,6 +98,18 @@ const categories = ref([
     { name: 'Образование', icon: 'bi bi-mortarboard', bgClass: 'bg-info bg-opacity-10 text-info' },
     { name: 'Штрафы', icon: 'bi bi-exclamation-triangle', bgClass: 'bg-danger bg-opacity-10 text-danger' },
 ]);
+
+// 🔥 ЗАГРУЗКА ИЗ БАЗЫ ДАННЫХ
+const services = ref([]);
+
+onMounted(async () => {
+    try {
+        const response = await axios.get('/services');
+        services.value = response.data;
+    } catch (e) {
+        console.error('Ошибка загрузки сервисов', e);
+    }
+});
 </script>
 
 <style scoped>

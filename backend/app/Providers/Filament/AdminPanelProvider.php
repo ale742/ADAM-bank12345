@@ -23,13 +23,16 @@ class AdminPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+          return $panel
             ->default()
             ->id('admin')
             ->path('admin')
             ->login()
+            // 🔥 ДОБАВЬ ВОТ ЭТИ СТРОКИ:
+            ->brandName('ADAM-BANK Admin')
+            ->favicon(asset('favicon.ico')) // Если есть иконка
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => '#004e92', // Наш синий цвет
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')

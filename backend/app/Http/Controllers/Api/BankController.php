@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Transaction;
+use App\Models\User;           // <--- ВАЖНО
+use App\Models\Transaction;    // <--- ВАЖНО
+use Illuminate\Support\Facades\DB; // <--- ВАЖНО
 
 class BankController extends Controller
 {
@@ -13,64 +15,108 @@ class BankController extends Controller
         return $request->user();
     }
 
-    // Получить историю (последние 10 операций)
+    // Получить историю
     public function getTransactions(Request $request) {
         return Transaction::where('user_id', $request->user()->id)
             ->orderBy('created_at', 'desc')
-            ->take(10)
+            ->take(20) // Берем последние 20
             ->get();
     }
 
-    // Сделать ПЕРЕВОД
-  public function makeTransfer(Request $request) {
+    // Перевод
+    public function makeTransfer(Request $request) {
+        // 1. Валидация
         $request->validate([
             'amount' => 'required|numeric|min:100',
-            'phone' => 'required' // Номер получателя
+            'phone' => 'required'
         ]);
 
-        $sender = $request->user(); // Я (отправитель)
+        $sender = $request->user();
         $amount = $request->amount;
+        $phone = $request->phone;
 
-        // 1. Ищем получателя по телефону
-        $receiver = \App\Models\User::where('phone', $request->phone)->first();
+        // 2. Ищем получателя (точное совпадение строки телефона)
+        $receiver = User::where('phone', $phone)->first();
 
+        // Если не нашли
         if (!$receiver) {
-            return response()->json(['message' => 'Клиент с таким номером не найден'], 404);
+            return response()->json(['message' => 'Клиент с таким номером не найден в базе'], 404);
         }
 
-        // 2. Нельзя переводить самому себе
+        // Если это я сам
         if ($sender->id === $receiver->id) {
             return response()->json(['message' => 'Нельзя переводить самому себе'], 400);
         }
 
-        // 3. Проверяем баланс
+        // Если денег нет
         if ($sender->balance < $amount) {
             return response()->json(['message' => 'Недостаточно средств'], 400);
         }
 
-        // 4. МАГИЯ ПЕРЕВОДА 💸
-        $sender->balance -= $amount;   // У меня убыло
-        $receiver->balance += $amount; // Ему прибыло
+        // Если карта заблочена
+        if ($sender->is_blocked) {
+            return response()->json(['message' => 'Ваша карта заблокирована'], 403);
+        }
 
-        $sender->save();
-        $receiver->save();
+        // 3. ТРАНЗАКЦИЯ (Всё или ничего)
+        try {
+            DB::transaction(function () use ($sender, $receiver, $amount) {
+                // Снимаем
+                $sender->balance -= $amount;
+                $sender->save();
 
-        // 5. Пишем в историю (Для меня)
-        Transaction::create([
-            'user_id' => $sender->id,
-            'type' => 'transfer',
-            'amount' => $amount,
-            'description' => 'Перевод: ' . $receiver->name . ' (' . $request->phone . ')'
+                // Начисляем
+                $receiver->balance += $amount;
+                $receiver->save();
+
+                // История отправителя
+                Transaction::create([
+                    'user_id' => $sender->id,
+                    'type' => 'transfer',
+                    'amount' => $amount,
+                    'description' => 'Перевод: ' . $receiver->name
+                ]);
+
+                // История получателя
+                Transaction::create([
+                    'user_id' => $receiver->id,
+                    'type' => 'transfer_in',
+                    'amount' => $amount,
+                    'description' => 'Пополнение от: ' . $sender->name
+                ]);
+            });
+
+            return response()->json([
+                'message' => 'Перевод успешно выполнен',
+                'balance' => $sender->balance
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Ошибка сервера при переводе'], 500);
+        }
+    }
+    // Обновление лимитов
+    public function updateLimits(Request $request) {
+        $user = $request->user();
+
+        // Обновляем поле limits (Laravel сам закодирует в JSON)
+        $user->limits = $request->limits;
+        $user->save();
+
+        return response()->json(['message' => 'Лимиты обновлены', 'limits' => $user->limits]);
+    }
+
+    // Блокировка карты
+    public function toggleBlockCard(Request $request) {
+        $user = $request->user();
+
+        // Меняем статус на фываыфвафыва
+        $user->is_blocked = !$user->is_blocked;
+        $user->save();
+
+        return response()->json([
+            'message' => $user->is_blocked ? 'Карта заблокирована' : 'Карта разблокирована',
+            'is_blocked' => $user->is_blocked
         ]);
-
-        // 6. Пишем в историю (Для получателя, чтобы он тоже видел)
-        Transaction::create([
-            'user_id' => $receiver->id,
-            'type' => 'transfer_in', // Тип "Входящий перевод"
-            'amount' => $amount, // Можно сделать плюс, но в истории обычно просто сумма
-            'description' => 'Пополнение от: ' . $sender->name
-        ]);
-
-        return response()->json(['message' => 'Перевод успешен', 'balance' => $sender->balance]);
     }
 }
