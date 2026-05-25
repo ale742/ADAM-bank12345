@@ -6,13 +6,11 @@
       <div class="container h-100 d-flex align-items-center justify-content-between py-3">
         
         <!-- Лого -->
-        <div class="logo-placeholder d-flex align-items-center">
-          <div class="logo-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold">
-            A
-          </div>
-        </div>
+         <div class="logo-placeholder d-flex align-items-center" @click="$router.push('/')">
+          <img src="../assets/adam-logo.png" alt="Adam Bank" class="brand-logo-img shadow-sm">
+         </div>
 
-        <!-- Поискывапдыватптоывщшатпщшыватщшгптывщаштьпщшдватьщ-->
+        <!-- Поиск-->
         <div class="search-bar flex-grow-1 mx-3 md-mx-5">
           <div class="input-group">
             <span class="input-group-text bg-light border-0 rounded-start-pill ps-3">
@@ -158,6 +156,18 @@ const isActive = (path) => {
 </script>
 
 <style scoped>
+/* Лого */
+.brand-logo-img {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px; /* Чтобы углы лого совпали с дизайном */
+    object-fit: cover;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+.brand-logo-img:active {
+    transform: scale(0.9);
+}
 /* ОБЩИЙ ФОН */
 .home-wrapper {
     min-height: 100vh;

@@ -26,6 +26,9 @@ const router = createRouter({
     { path: '/qr', name: 'qr', component: QRView },
     { path: '/payments', name: 'payments', component: PaymentsView },
     { path: '/settings', name: 'settings', component: SettingsView },
+    { path: '/deposits', name: 'deposits', component: () => import('../views/DepositDetailsView.vue') },
+    { path: '/loan', name: 'loan', component: () => import('../views/LoanDetailsView.vue') },
+    { path: '/open-deposit', name: 'open-deposit', component: () => import('../views/DepositOpenView.vue') },
   ]
 })
 
