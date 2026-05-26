@@ -4,7 +4,7 @@ import { ref } from 'vue';
 export const useAuthStore = defineStore('auth', () => {
     // 1. СОСТОЯНИЕ (STATE)
     const user = ref(JSON.parse(localStorage.getItem('user')) || {
-        balance: 3400000,
+        balance: 100000,
         deposits: [],
         credits: [],
         isBlocked: false,
@@ -29,6 +29,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     const openDeposit = (data) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
+        if (user.value.deposits.length >= 5) throw new Error('Максимальное количество депозитов — 5');
         const numAmount = Number(data.amount); // ФИКС: Гарантируем число
         const currentBalance = Number(user.value.balance); // ФИКС
 

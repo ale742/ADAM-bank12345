@@ -11,6 +11,10 @@ import QRView from '../views/QRView.vue'
 import PaymentsView from '../views/PaymentsView.vue'
 import SettingsView from '../views/SettingsView.vue'
 
+// Импортируем новые страницы (ленивая загрузка для скорости)
+const DepositOpenView = () => import('../views/DepositOpenView.vue')
+const DepositDetailsView = () => import('../views/DepositDetailsView.vue')
+const LoanDetailsView = () => import('../views/LoanDetailsView.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,17 +30,24 @@ const router = createRouter({
     { path: '/qr', name: 'qr', component: QRView },
     { path: '/payments', name: 'payments', component: PaymentsView },
     { path: '/settings', name: 'settings', component: SettingsView },
-    { path: '/deposits', name: 'deposits', component: () => import('../views/DepositDetailsView.vue') },
-    { path: '/loan', name: 'loan', component: () => import('../views/LoanDetailsView.vue') },
-    { path: '/open-deposit', name: 'open-deposit', component: () => import('../views/DepositOpenView.vue') },
+    
+    // ДЕПОЗИТЫ
+    { path: '/open-deposit', name: 'open-deposit', component: DepositOpenView },
+    { path: '/deposits/:id', name: 'deposit-details', component: DepositDetailsView },
+    
+    // КРЕДИТЫ
+    { path: '/loan', name: 'loan', component: LoanDetailsView },
   ]
 })
 
 // Защита роутов
 router.beforeEach((to, from, next) => {
     const token = localStorage.getItem('token');
-    if (to.name !== 'login' && !token) next({ name: 'login' });
-    else next();
+    if (to.name !== 'login' && !token) {
+        next({ name: 'login' });
+    } else {
+        next();
+    }
 });
 
 export default router;
