@@ -53,13 +53,21 @@ export const useAuthStore = defineStore('auth', () => {
     const replenishDeposit = (id, amount) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         const num = Number(amount);
-        const dep = user.value.deposits.find(d => d.id === id);
+        const dep = user.value.deposits.find(d => d.id == id);
         if (user.value.balance >= num) {
             user.value.balance -= num;
             dep.amount += num;
             save();
         } else {
-            throw new Error('Мало денег на карте');
+            throw new Error('Недостаточно средств на основном счете');
+        }
+    };
+
+    const toggleDepVisibility = (id) => {
+        const dep = user.value.deposits.find(d => d.id == id);
+        if (dep) { 
+            dep.isAmountHidden = !dep.isAmountHidden; 
+            save(); 
         }
     };
 
@@ -176,6 +184,6 @@ export const useAuthStore = defineStore('auth', () => {
     return { 
         user, token, isWinterMode, register, login, logout, 
         toggleWinterMode, toggleBlockCard, openDeposit, takeLoan, repayLoan,
-        replenishDeposit, withdrawToCard, closeDeposit, makeTransfer, renameDeposit, 
+        replenishDeposit, withdrawToCard, closeDeposit, makeTransfer, renameDeposit, toggleDepVisibility,
     };
 });
