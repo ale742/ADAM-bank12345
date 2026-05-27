@@ -30,8 +30,8 @@ export const useAuthStore = defineStore('auth', () => {
     const openDeposit = (data) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         if (user.value.deposits.length >= 5) throw new Error('Максимальное количество депозитов — 5');
-        const numAmount = Number(data.amount); // ФИКС: Гарантируем число
-        const currentBalance = Number(user.value.balance); // ФИКС
+        const numAmount = Number(data.amount); 
+        const currentBalance = Number(user.value.balance); 
 
         if (currentBalance >= numAmount) {
             user.value.balance = currentBalance - numAmount;
@@ -42,7 +42,9 @@ export const useAuthStore = defineStore('auth', () => {
                 title: data.title, 
                 type: data.type, 
                 rate: data.rate,
-                canWithdraw: data.type !== 'strict'
+                canWithdraw: data.type !== 'strict',
+                isAmountHidden: false,
+                createdAt: Date.now() // ФИКС: Сохраняем время открытия для правила 3-х дней
             });
             save();
         } else {
@@ -75,7 +77,15 @@ export const useAuthStore = defineStore('auth', () => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         const num = Number(amount);
         const dep = user.value.deposits.find(d => d.id === id);
+        
         if (!dep.canWithdraw) throw new Error('С этого вклада нельзя снимать деньги до конца срока');
+        
+        // ПРАВИЛО МИН. БАЛАНСА 1000 ТЕНГЕ
+        const remainder = dep.amount - num;
+        if (remainder > 0 && remainder < 1000) {
+            throw new Error('Неснижаемый остаток — 1000 ₸. Чтобы забрать всё, закройте депозит полностью.');
+        }
+
         if (dep.amount >= num) {
             dep.amount -= num;
             user.value.balance += num;
@@ -94,9 +104,26 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
     
-     const renameDeposit = (id, newTitle) => {
+    const renameDeposit = (id, newTitle) => {
         const dep = user.value.deposits.find(d => d.id === id);
         if (dep) { dep.title = newTitle; save(); }
+    };
+
+    // ФУНКЦИЯ ПРОВЕРКИ ПРАВИЛА 3-Х ДНЕЙ
+    const checkAutoCloseRule = () => {
+        const now = Date.now();
+        const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+
+        user.value.deposits = user.value.deposits.filter(dep => {
+            const daysPassed = now - dep.createdAt;
+            // Если прошло > 3 дней И баланс < 1000
+            if (daysPassed > threeDaysMs && dep.amount < 1000) {
+                user.value.balance += dep.amount; // Возвращаем копейки на карту
+                return false; // Удаляем депозит
+            }
+            return true;
+        });
+        save();
     };
 
     // --- ОСТАЛЬНЫЕ ФУНКЦИИ ---
@@ -182,26 +209,33 @@ export const useAuthStore = defineStore('auth', () => {
     };
 
     const topUpBalance = (amount) => {
-    user.value.balance += Number(amount);
-    save(); // Сохраняем в localStorage
+        user.value.balance += Number(amount);
+        save();
     };
 
     const transferFromDepToCard = (depId, amount) => {
-    const dep = user.value.deposits.find(d => d.id === depId);
-    const num = Number(amount);
-    if (dep && dep.amount >= num) {
-        dep.amount -= num;
-        user.value.balance += num;
-        save();
-    } else {
-        throw new Error('Недостаточно средств на депозите');
-    }
-};
+        const dep = user.value.deposits.find(d => d.id === depId);
+        const num = Number(amount);
+        
+        // Тут тоже добавим проверку неснижаемого остатка для перевода
+        const remainder = dep.amount - num;
+        if (remainder > 0 && remainder < 1000) {
+            throw new Error('Неснижаемый остаток — 1000 ₸. Переведите меньше или закройте депозит.');
+        }
+
+        if (dep && dep.amount >= num) {
+            dep.amount -= num;
+            user.value.balance += num;
+            save();
+        } else {
+            throw new Error('Недостаточно средств на депозите');
+        }
+    };
 
     return { 
         user, token, isWinterMode, register, login, logout, 
         toggleWinterMode, toggleBlockCard, openDeposit, takeLoan, repayLoan,
         replenishDeposit, withdrawToCard, closeDeposit, makeTransfer, renameDeposit, toggleDepVisibility,
-        topUpBalance, transferFromDepToCard,
+        topUpBalance, transferFromDepToCard, checkAutoCloseRule
     };
 });

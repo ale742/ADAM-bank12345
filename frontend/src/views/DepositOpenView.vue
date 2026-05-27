@@ -95,9 +95,9 @@ const isVerifying = ref(false);
 const status = reactive({ visible: false, type: 'success', title: '', msg: '' });
 
 const depositOptions = [
-    { type: 'flexible', name: 'Накопительный 18%', rate: 18, desc: 'Снимайте и пополняйте когда угодно без потери процентов.', icon: 'bi-unlock-fill' },
-    { type: 'strict', name: 'Накопительный 22%', rate: 22, desc: 'Без снятия до конца срока. Максимальная выгода для накоплений.', icon: 'bi-shield-lock-fill' },
-    { type: 'family', name: 'Семейный 20%', rate: 20, desc: 'Общий счет с доступом для ваших близких.', icon: 'bi-people-fill' }
+    { type: 'flexible', name: 'Накопительный 18%', rate: 18, desc: 'Снимайте и пополняйте когда угодно без потери процентов. Минимальный остаток 1000 ₸. Нужно пополнить в течение 3 дней.', icon: 'bi-unlock-fill' },
+    { type: 'strict', name: 'Накопительный 22%', rate: 22, desc: 'Без снятия до конца срока. Максимальная выгода для накоплений.Минимальный остаток 1000 ₸. Нужно пополнить в течение 3 дней.', icon: 'bi-shield-lock-fill' },
+    { type: 'family', name: 'Семейный 20%', rate: 20, desc: 'Общий счет с доступом для ваших близких.Минимальный остаток 1000 ₸. Нужно пополнить в течение 3 дней.', icon: 'bi-people-fill' }
 ];
 
 const formatMoney = (v) => new Intl.NumberFormat('ru-RU').format(v);

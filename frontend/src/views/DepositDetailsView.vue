@@ -142,9 +142,14 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
 import { ref, reactive, computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { useRoute, useRouter } from 'vue-router';
+
+onMounted(() => {
+    auth.checkAutoCloseRule(); // Проверяем правило 3-х дней при входе
+});
 
 const auth = useAuthStore();
 const route = useRoute();
