@@ -181,9 +181,27 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('winter_mode', isWinterMode.value);
     };
 
+    const topUpBalance = (amount) => {
+    user.value.balance += Number(amount);
+    save(); // Сохраняем в localStorage
+    };
+
+    const transferFromDepToCard = (depId, amount) => {
+    const dep = user.value.deposits.find(d => d.id === depId);
+    const num = Number(amount);
+    if (dep && dep.amount >= num) {
+        dep.amount -= num;
+        user.value.balance += num;
+        save();
+    } else {
+        throw new Error('Недостаточно средств на депозите');
+    }
+};
+
     return { 
         user, token, isWinterMode, register, login, logout, 
         toggleWinterMode, toggleBlockCard, openDeposit, takeLoan, repayLoan,
         replenishDeposit, withdrawToCard, closeDeposit, makeTransfer, renameDeposit, toggleDepVisibility,
+        topUpBalance, transferFromDepToCard,
     };
 });

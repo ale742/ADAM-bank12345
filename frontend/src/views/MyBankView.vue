@@ -98,9 +98,13 @@
               {{ formatMoney(auth.user.balance) }} <span class="currency-symbol">₸</span>
           </h1>
           <div class="d-flex justify-content-center gap-3">
-              <button class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" :disabled="auth.user.isBlocked">
+              <button 
+                class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" 
+                :disabled="auth.user?.isBlocked"
+                @click="$router.push('/topup')"
+                >
                 <i class="bi bi-plus-lg me-2"></i> Пополнить
-              </button>
+                </button>
               <button class="btn btn-light text-dark rounded-pill px-4 fw-bold shadow-sm" :disabled="auth.user.isBlocked" @click="showCVV = !showCVV">
                   <i class="bi me-2" :class="showCVV ? 'bi-eye-slash' : 'bi-eye'"></i>
                   {{ showCVV && !auth.user.isBlocked ? auth.user.card_cvv : 'CVV' }}

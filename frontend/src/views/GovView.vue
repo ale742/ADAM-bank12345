@@ -20,7 +20,7 @@
                 <span></span><span></span><span></span>
             </div>
             <div class="logo-box egov-logo shadow-lg">
-                <img src="https://egov.kz/cms/ru/themes/egov/img/logo.png" alt="eGov">
+                <img src="C:\Users\mus1n\OneDrive\Desktop\ADAM-bank12345\frontend\src\assets\egov-logo.png" alt="eGov">
             </div>
         </div>
         <h5 class="fw-bold mb-2">Синхронизация с eGov.kz</h5>

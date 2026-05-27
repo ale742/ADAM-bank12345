@@ -37,6 +37,8 @@ const router = createRouter({
     
     // КРЕДИТЫ
     { path: '/loan', name: 'loan', component: LoanDetailsView },
+    
+    { path: '/topup', name: 'topup', component: () => import('../views/TopUpView.vue') },
   ]
 })
 
