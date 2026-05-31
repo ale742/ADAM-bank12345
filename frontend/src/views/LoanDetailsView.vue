@@ -1,25 +1,31 @@
 <template>
   <div class="app-layout" :class="{ 'dark-theme': auth.isDarkMode }">
-    
-    <!-- 1. КУСТОМНОЕ УВЕДОМЛЕНИЕ (Вместо системных алертов) -->
-    <Transition name="fade">
-      <div v-if="confirmDialog.visible" class="custom-confirm-overlay" @click.self="closeConfirm">
-        <div class="confirm-modal animate__animated animate__zoomIn">
-          <div class="confirm-icon-box" :class="confirmDialog.type">
-            <i :class="confirmDialog.icon"></i>
+
+    <!-- ЕДИНАЯ СИСТЕМА УВЕДОМЛЕНИЙ (КОНФЕТКА) -->
+    <Transition name="scale">
+      <div v-if="status.visible" class="status-overlay" @click.self="handleOverlayClick">
+        <div class="status-card shadow-lg text-center p-5" :class="status.type">
+          <div class="status-icon mb-4">
+            <i :class="status.icon"></i>
           </div>
-          <h5 class="fw-bold mb-2">{{ confirmDialog.title }}</h5>
-          <p class="text-muted small mb-4">{{ confirmDialog.message }}</p>
-          <div class="d-flex gap-2 w-100">
-            <button class="btn btn-light flex-fill rounded-pill py-2 fw-bold" @click="closeConfirm">Отмена</button>
-            <button class="btn btn-primary flex-fill rounded-pill py-2 fw-bold shadow-sm" @click="confirmDialog.action">Да, уверен</button>
+          <h4 class="fw-bold mb-2">{{ status.title }}</h4>
+          <p class="text-muted small">{{ status.msg }}</p>
+          
+          <!-- КНОПКИ ДЛЯ ПОДТВЕРЖДЕНИЯ -->
+          <div v-if="status.type === 'confirm'" class="d-flex gap-2 mt-4">
+            <button class="btn btn-light flex-fill rounded-pill py-2 fw-bold" @click="status.visible = false">Отмена</button>
+            <button class="btn btn-primary flex-fill rounded-pill py-2 fw-bold shadow-sm" @click="executeRepay">Да, уверен</button>
           </div>
+          
+          <!-- КНОПКА ДЛЯ УСПЕХА / ОШИБКИ -->
+          <button v-else class="btn btn-primary rounded-pill px-5 mt-4 fw-bold" @click="status.visible = false">
+            Понятно
+          </button>
         </div>
       </div>
     </Transition>
 
     <div class="page-wrapper" v-if="loan">
-        <!-- Хедер -->
         <div class="header d-flex align-items-center px-4 py-3 bg-header fixed-top">
             <button @click="$router.push('/my-bank')" class="btn btn-light-custom rounded-circle me-3 back-btn">
                 <i class="bi bi-arrow-left"></i>
@@ -28,7 +34,6 @@
         </div>
 
         <div class="container content-area pt-5 mt-4">
-            
             <!-- СТАТУС КРЕДИТА -->
             <div class="bg-card rounded-5 p-4 shadow-sm mb-4 text-center">
                 <small class="text-muted fw-bold text-uppercase ls-1 d-block mb-2">Остаток долга</small>
@@ -60,34 +65,21 @@
                 </button>
             </div>
 
-            <!-- ПРЕМИАЛЬНОЕ ДОСРОЧНОЕ ПОГАШЕНИЕ (ВМЕСТО ОБЫЧНОЙ КНОПКИ) -->
+            <!-- ДОСРОЧНОЕ ПОГАШЕНИЕ -->
             <h6 class="fw-bold text-muted mb-3 ps-2">Управление кредитом</h6>
             <div class="repay-full-card p-4 rounded-5 text-white mb-5 shadow-lg position-relative overflow-hidden" @click="requestRepay('full')">
                 <div class="card-bg-decor"></div>
                 <div class="d-flex justify-content-between align-items-center position-relative z-2">
                     <div>
                         <h5 class="fw-bold mb-1">Погасить полностью</h5>
-                        <p class="very-small opacity-75 m-0">Экономия на вознаграждении до 15%</p>
+                        <p class="very-small opacity-75 m-0">Экономия на процентах до 15%</p>
                     </div>
                     <div class="text-end">
                         <div class="fw-bold fs-5">{{ formatMoney(loan.remainingDebt) }} ₸</div>
                         <i class="bi bi-chevron-right"></i>
                     </div>
                 </div>
-                <!-- Анимация блеска -->
                 <div class="shimmer-effect"></div>
-            </div>
-
-            <!-- ИНФО О КРЕДИТЕ -->
-            <div class="bg-card rounded-5 p-4 shadow-sm mb-4">
-                <div class="d-flex justify-content-between mb-3 border-bottom pb-2 border-light">
-                    <span class="text-muted small">Ставка</span>
-                    <span class="fw-bold text-main">{{ loan.rate }}%</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span class="text-muted small">Тип платежа</span>
-                    <span class="fw-bold text-main">Аннуитетный</span>
-                </div>
             </div>
         </div>
 
@@ -101,19 +93,19 @@
                         <div class="face-icon-ios"><i class="bi bi-person-bounding-box"></i></div>
                         <div class="scan-line-ios-blue"></div>
                     </div>
-                    <h5 class="mt-4 text-white fw-bold">Подтверждение оплаты</h5>
-                    <p class="text-white-50 small">Adam Security System</p>
+                    <h5 class="mt-4 text-white fw-bold">Face ID</h5>
+                    <p class="text-white-50 small">Подтверждение оплаты</p>
                 </div>
             </div>
         </Transition>
     </div>
 
-    <!-- ЕСЛИ КРЕДИТА НЕТ (Защита от белого экрана) -->
+    <!-- ЕСЛИ КРЕДИТА НЕТ -->
     <div v-else class="container text-center pt-5 mt-5">
         <div class="p-5">
             <i class="bi bi-check-circle text-success display-1 mb-4"></i>
-            <h3 class="fw-bold">Кредитов нет</h3>
-            <p class="text-muted">Все ваши обязательства успешно исполнены.</p>
+            <h3 class="fw-bold text-main">Кредитов нет</h3>
+            <p class="text-muted">Все ваши обязательства выполнены!</p>
             <button class="btn btn-primary rounded-pill px-5 py-2" @click="$router.push('/my-bank')">В мой банк</button>
         </div>
     </div>
@@ -129,42 +121,69 @@ const auth = useAuthStore();
 const router = useRouter();
 const isVerifying = ref(false);
 
-// Кастомный диалог
-const confirmDialog = reactive({ visible: false, title: '', message: '', icon: '', type: '', action: null });
+// Единое состояние уведомлений
+const status = reactive({
+    visible: false,
+    type: 'success', // success, error, confirm
+    title: '',
+    msg: '',
+    icon: '',
+    pendingType: ''
+});
 
 const loan = computed(() => auth.user?.credits?.[0]);
 const progressWidth = computed(() => loan.value ? ((loan.value.months - loan.value.monthsLeft) / loan.value.months) * 100 : 0);
 
 const formatMoney = (v) => new Intl.NumberFormat('ru-RU').format(v || 0);
 
-const closeConfirm = () => { confirmDialog.visible = false; };
-
+// 1. ШАГ: ЗАПРОС (Окно "Вы уверены?")
 const requestRepay = (type) => {
     const amount = type === 'full' ? loan.value.remainingDebt : loan.value.monthlyPayment;
-    confirmDialog.title = type === 'full' ? 'Полное погашение' : 'Ежемесячный платеж';
-    confirmDialog.message = `Списать ${formatMoney(amount)} ₸ для оплаты кредита?`;
-    confirmDialog.icon = type === 'full' ? 'bi-shield-check' : 'bi-credit-card';
-    confirmDialog.type = 'info';
-    confirmDialog.action = () => handleRepay(type, amount);
-    confirmDialog.visible = true;
+    status.type = 'confirm';
+    status.title = type === 'full' ? 'Полное погашение' : 'Оплата платежа';
+    status.msg = `Списать ${formatMoney(amount)} ₸ с вашей карты?`;
+    status.icon = 'bi-question-circle text-primary';
+    status.pendingType = type;
+    status.visible = true;
 };
 
-const handleRepay = (type, amount) => {
-    confirmDialog.visible = false;
+// 2. ШАГ: ИСПОЛНЕНИЕ (Face ID + Store)
+const executeRepay = () => {
+    const type = status.pendingType;
+    const amount = type === 'full' ? loan.value.remainingDebt : loan.value.monthlyPayment;
+    
+    status.visible = false;
     isVerifying.value = true;
     
-    setTimeout(() => {
+    setTimeout(async () => {
         try {
-            auth.repayLoan(loan.value.id, amount, type === 'full');
+            await auth.repayLoan(loan.value.id, amount, type === 'full');
             isVerifying.value = false;
+            
+            // УСПЕХ
+            status.type = 'success';
+            status.icon = 'bi-check-lg';
+            status.title = 'Оплачено!';
+            status.msg = 'Средства успешно списаны. Ваш лимит обновлен.';
+            status.visible = true;
+
             if (type === 'full') {
-                router.push('/my-bank');
+                setTimeout(() => { if(status.visible) status.visible = false; router.push('/my-bank'); }, 2500);
             }
         } catch (e) {
             isVerifying.value = false;
-            alert(e.message);
+            // ОШИБКА (Сюда прилетит "Недостаточно средств")
+            status.type = 'error';
+            status.icon = 'bi-exclamation-triangle';
+            status.title = 'Ошибка';
+            status.msg = e.message;
+            status.visible = true;
         }
     }, 2500);
+};
+
+const handleOverlayClick = () => {
+    if (status.type !== 'confirm') status.visible = false;
 };
 </script>
 
@@ -172,11 +191,10 @@ const handleRepay = (type, amount) => {
 .page-wrapper { min-height: 100vh; }
 .ls-1 { letter-spacing: 1px; }
 
-/* ПРЕМИАЛЬНАЯ КАРТОЧКА ПОГАШЕНИЯ */
+/* ПРЕМИУМ КАРТОЧКА */
 .repay-full-card {
     background: linear-gradient(135deg, #000428 0%, #004e92 100%);
-    cursor: pointer; transition: transform 0.3s;
-    border: none;
+    cursor: pointer; transition: transform 0.3s; border: none;
 }
 .repay-full-card:active { transform: scale(0.97); }
 .card-bg-decor {
@@ -185,7 +203,6 @@ const handleRepay = (type, amount) => {
     transform: rotate(15deg);
 }
 
-/* ЭФФЕКТ БЛЕСКА */
 .shimmer-effect {
     position: absolute; inset: 0;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
@@ -194,9 +211,8 @@ const handleRepay = (type, amount) => {
 @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
 .border-highlight { border: 2px solid #0d6efd !important; }
-.very-small { font-size: 0.7rem; }
 
-/* FACE ID FIXED */
+/* FACE ID iOS STYLE */
 .face-id-ios-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.92);
     z-index: 6000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
@@ -212,8 +228,16 @@ const handleRepay = (type, amount) => {
 .scan-line-ios-blue { position: absolute; width: 100%; height: 2px; background: #0d6efd; box-shadow: 0 0 15px #0d6efd; animation: scanAnimIos 2s infinite ease-in-out; }
 @keyframes scanAnimIos { 0% { top: 10%; opacity: 0; } 50% { top: 90%; opacity: 1; } 100% { top: 10%; opacity: 0; } }
 
-/* CUSTOM CONFIRM */
-.custom-confirm-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); z-index: 5000; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.confirm-modal { background: var(--bg-card); width: 100%; max-width: 340px; border-radius: 35px; padding: 35px; text-align: center; color: var(--text-main); }
-.confirm-icon-box { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; background: rgba(13, 110, 253, 0.1); color: #0d6efd; font-size: 1.5rem; }
+/* STATUS OVERLAY (ТВОЯ КОНФЕТКА) */
+.status-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px); z-index: 8000; display: flex; align-items: center; justify-content: center; }
+.status-card { background: var(--bg-card); border-radius: 40px; width: 85%; max-width: 380px; color: var(--text-main); }
+.status-icon { width: 85px; height: 85px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2.8rem; margin: 0 auto; }
+.status-card.success .status-icon { background: #198754; color: white; }
+.status-card.error .status-icon { background: #dc3545; color: white; }
+.status-card.confirm .status-icon { background: #0d6efd; color: white; }
+
+.scale-enter-active, .scale-leave-active { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.scale-enter-from, .scale-leave-to { opacity: 0; transform: scale(0.5); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>
