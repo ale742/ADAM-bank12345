@@ -21,6 +21,18 @@
       <!-- 2. МЕНЮ НАСТРОЕК -->
       <div class="list-group rounded-4 shadow-sm border-0 mb-4 overflow-hidden bg-white animate__animated animate__fadeInUp delay-1">
         
+        <!-- Добавь это в список настроек -->
+<div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">
+    <div class="d-flex align-items-center gap-3">
+        <div class="icon-box bg-dark text-white">
+            <i class="bi" :class="auth.isDarkMode ? 'bi-moon-stars-fill' : 'bi-sun-fill'"></i>
+        </div>
+        <span class="fw-bold">Темная тема</span>
+    </div>
+    <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" :checked="auth.isDarkMode" @change="auth.toggleDarkMode">
+    </div>
+</div>
 
         <!-- Уведомления -->
         <div class="list-group-item p-3 border-0 d-flex align-items-center justify-content-between action-row">

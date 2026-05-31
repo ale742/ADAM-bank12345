@@ -36,9 +36,8 @@ const router = createRouter({
     { path: '/deposits/:id', name: 'deposit-details', component: DepositDetailsView },
     
     // КРЕДИТЫ
-    { path: '/loan', name: 'loan', component: LoanDetailsView },
-    
-    { path: '/topup', name: 'topup', component: () => import('../views/TopUpView.vue') },
+    { path: '/open-loan', name: 'open-loan', component: () => import('../views/LoanOpenView.vue') },
+    { path: '/loan', name: 'loan', component: () => import('../views/LoanDetailsView.vue') },
   ]
 })
 

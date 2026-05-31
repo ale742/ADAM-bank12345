@@ -11,7 +11,7 @@
                 </div>
                 <h4 class="fw-bold mb-2">{{ status.title }}</h4>
                 <p class="text-muted small">{{ status.msg }}</p>
-                <button class="btn btn-light btn-sm rounded-pill px-4 mt-3" @click="status.visible = false">Закрыть</button>
+                <button class="btn btn-primary rounded-pill px-5 mt-3 fw-bold" @click="status.visible = false">Понятно</button>
             </div>
         </div>
     </Transition>
@@ -86,13 +86,13 @@
               <button class="btn btn-link w-100 text-muted mt-2" @click="loginStep = 'select'">Другой способ</button>
           </div>
 
-          <!-- Форма входа по Телефону (Для диплома) -->
+          <!-- Форма входа по Телефону -->
           <div v-if="loginStep === 'phone'" class="animate__animated animate__fadeInRight">
                 <div class="mb-4">
                     <label class="form-label small fw-bold">Номер телефона</label>
                     <input v-model="loginForm.phone" type="tel" class="form-control" placeholder="+7 (707) 000-00-00" @input="maskPhone">
                 </div>
-                <button class="btn btn-primary w-100 py-3 rounded-pill fw-bold" @click="triggerStatus('success', 'СМС отправлено', 'Код: 1234 (демо)')">
+                <button class="btn btn-primary w-100 py-3 rounded-pill fw-bold" @click="triggerStatus('error', 'Ошибка сети', 'Сервис СМС временно недоступен. Используйте ИИН.')">
                     Получить код
                 </button>
                 <button class="btn btn-link w-100 text-muted mt-2" @click="loginStep = 'select'">Назад</button>
@@ -110,19 +110,21 @@
               <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" :style="{ width: (regStep/4)*100 + '%' }"></div>
           </div>
 
-          <!-- Шаг 1: ФИО и ИИН -->
+          <!-- Шаг 1: ФИО (ТОЛЬКО ЛАТИНИЦА) и ИИН -->
           <div v-if="regStep === 1" class="animate__animated animate__fadeIn">
-              <input v-model="regForm.lastName" class="form-control mb-2" placeholder="Фамилия *">
-              <input v-model="regForm.firstName" class="form-control mb-2" placeholder="Имя *">
-              <input v-model="regForm.patronymic" class="form-control mb-2" placeholder="Отчество (необязательно)">
+              <label class="form-label small fw-bold text-muted">ДАННЫЕ НА ЛАТИНИЦЕ (КАК В УДОСТОВЕРЕНИИ ЛИЧНОСТИ)</label>
+              <input v-model="regForm.lastName" @input="valLatin('lastName')" class="form-control mb-2 text-uppercase" placeholder="ФАМИЛИЯ *">
+              <input v-model="regForm.firstName" @input="valLatin('firstName')" class="form-control mb-2 text-uppercase" placeholder="ИМЯ *">
+              <input v-model="regForm.patronymic" @input="valLatin('patronymic')" class="form-control mb-2 text-uppercase" placeholder="ОТЧЕСТВО">
               
-              <div class="position-relative mb-4">
+              <div class="position-relative mb-4 mt-3">
+                  <label class="form-label small fw-bold text-muted">ИИН РЕСПУБЛИКИ КАЗАХСТАН</label>
                   <input 
                       v-model="regForm.iin" 
                       maxlength="12" 
                       class="form-control" 
                       :class="{'is-invalid': iinError, 'is-valid': regForm.iin.length === 12 && !iinError}"
-                      placeholder="ИИН *" 
+                      placeholder="000000000000" 
                       @input="valIIN"
                   >
                   <div v-if="iinError" class="invalid-feedback text-start ps-2" style="font-size: 0.7rem;">
@@ -163,12 +165,12 @@
                   Начать биометрию
               </button>
               <div v-if="faceStatus === 'done'" class="d-flex gap-2">
-                  <button class="btn btn-light rounded-pill w-50 py-3 fw-bold" @click="faceStatus = 'idle'; biometryProgress = 0">Заново</button>
+                  <button class="btn btn-light rounded-pill w-50 py-3 fw-bold" @click="faceStatus = 'idle'">Заново</button>
                   <button class="btn btn-success w-100 rounded-pill py-3 fw-bold animate__animated animate__bounceIn" @click="regStep = 4">Продолжить</button>
               </div>
           </div>
 
-          <!-- Шаг 4: СУПЕР ПАРОЛЬ -->
+          <!-- Шаг 4: ПИЗДЕЦ КАКОЙ НАДЕЖНЫЙ ПАРОЛЬ -->
           <div v-if="regStep === 4" class="animate__animated animate__fadeIn">
               <label class="form-label small fw-bold">Придумайте надежный пароль</label>
               <div class="input-group mb-3">
@@ -229,7 +231,7 @@ const router = useRouter();
 
 // === СОСТОЯНИЯ UI ===
 const isRegister = ref(false);
-const loginStep = ref('select'); // select, iin, phone
+const loginStep = ref('select'); 
 const regStep = ref(1);
 const isProcessing = ref(false);
 const isErrorShaking = ref(false);
@@ -242,7 +244,12 @@ const stepTitles = ['Личные данные', 'Контакты', 'Биоме
 const loginForm = reactive({ iin: '', password: '', phone: '' });
 const regForm = reactive({ lastName: '', firstName: '', patronymic: '', iin: '', phone: '', email: '', password: '' });
 
-// === ПРАВИЛА ПАРОЛЯ (ПИЗДЕЦ КАКИЕ НАДЕЖНЫЕ) ===
+// === ВАЛИДАЦИЯ ЛАТИННИЦЫ ===
+const valLatin = (field) => {
+    regForm[field] = regForm[field].replace(/[^A-Za-z\s]/g, '');
+};
+
+// === ПРАВИЛА ПАРОЛЯ ===
 const pwdRules = reactive({
     'Минимум 8 символов': false,
     'Заглавная буква и цифра': false,
@@ -256,7 +263,6 @@ const checkAdvancedPassword = () => {
     pwdRules['Заглавная буква и цифра'] = /[A-Z]/.test(p) && /\d/.test(p);
     pwdRules['Спецсимвол (!@#$%)'] = /[!@#$%^&*(),.?":{}|<>]/.test(p);
     
-    // Проверка на вхождение Имени или даты рождения из ИИН в пароль
     const namePart = regForm.firstName.toLowerCase();
     const iinPart = regForm.iin.substring(0, 6);
     const containsBadData = (namePart && p.toLowerCase().includes(namePart)) || (iinPart && p.includes(iinPart));
@@ -266,30 +272,13 @@ const checkAdvancedPassword = () => {
 
 const isPasswordValid = computed(() => Object.values(pwdRules).every(v => v === true));
 
-// === ВАЛИДАЦИЯ ИИН (ОФИЦИАЛЬНЫЙ СТАНДАРТ РК) ===
+// === ВАЛИДАЦИЯ ИИН (РК) ===
 const iinError = ref('');
 
 const validateIIN = (iin) => {
     if (!iin || iin.length !== 12) return false;
     if (!/^\d+$/.test(iin)) return false;
 
-    // 1. Проверка даты (YYMMDD)
-    const year = parseInt(iin.substring(0, 2));
-    const month = parseInt(iin.substring(2, 4));
-    const day = parseInt(iin.substring(4, 6));
-    if (month < 1 || month > 12 || day < 1 || day > 31) {
-        iinError.value = 'Ошибка в дате рождения';
-        return false;
-    }
-
-    // 2. Проверка 7-й цифры (Век и Пол)
-    const s = parseInt(iin.substring(6, 7));
-    if (s < 1 || s > 6) {
-        iinError.value = 'Некорректная 7-я цифра';
-        return false;
-    }
-
-    // 3. Контрольное число
     const weights1 = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     let sum = 0;
     for (let i = 0; i < 11; i++) sum += parseInt(iin[i]) * weights1[i];
@@ -304,7 +293,7 @@ const validateIIN = (iin) => {
     }
 
     if (control !== parseInt(iin[11])) {
-        iinError.value = 'Неверное контрольное число';
+        iinError.value = 'Неверное контрольное число ИИН';
         return false;
     }
 
@@ -323,7 +312,7 @@ const valIIN = (e) => {
 };
 
 // === FACE ID ЛОГИКА ===
-const faceStatus = ref('idle'); // idle, scanning, done
+const faceStatus = ref('idle'); 
 const faceMsg = ref('Посмотрите в камеру');
 
 const startFaceID = async () => {
@@ -337,7 +326,7 @@ const startFaceID = async () => {
         await new Promise(r => setTimeout(r, 3000));
         
         faceStatus.value = 'done';
-        faceMsg.value = 'Личность успешно подтверждена';
+        faceMsg.value = 'Личность подтверждена';
         s.getTracks().forEach(t => t.stop());
     } catch (e) {
         triggerStatus('error', 'Ошибка камеры', 'Доступ запрещен или камера не найдена');
@@ -378,7 +367,7 @@ const handleRegister = async () => {
     isProcessing.value = true;
     try {
         const data = { 
-            name: `${regForm.lastName} ${regForm.firstName}`, 
+            name: `${regForm.lastName} ${regForm.firstName}`.toUpperCase(), 
             iin: regForm.iin, phone: regForm.phone, email: regForm.email, password: regForm.password 
         };
         await auth.register(data);
@@ -447,7 +436,6 @@ video { width: 100%; height: 100%; object-fit: cover; }
 
 .password-meter { border: 1px solid #f0f0f0; }
 
-/* TRANSITIONS */
 .scale-enter-active, .scale-leave-active { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .scale-enter-from, .scale-leave-to { opacity: 0; transform: scale(0.5); }
 </style>

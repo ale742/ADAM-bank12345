@@ -258,7 +258,11 @@ const formatMoney = (v) => new Intl.NumberFormat('ru-RU').format(v || 0);
 
 const hasDeposit = computed(() => auth.user?.deposits && auth.user.deposits.length > 0);
 const hasCredit = computed(() => auth.user?.credits && auth.user.credits.length > 0);
-const totalDebt = computed(() => auth.user.credits?.[0]?.amount || 0);
+const totalDebt = computed(() => {
+    if (!hasCredit.value) return 0;
+    // Меняем c.amount на c.remainingDebt
+    return auth.user.credits.reduce((acc, c) => acc + (c.remainingDebt || 0), 0);
+});
 
 const maskedCardNumber = computed(() => {
     const num = auth.user?.card_number || '8400 3435 3687 9207';
@@ -279,8 +283,15 @@ const handleDepositClick = (id = null) => {
 };
 
 const handleCreditClick = () => {
-    if (auth.user.isBlocked) return openConfirm('Карта заблокирована', 'Действие недоступно.', 'bi-snow', 'danger', 'Понятно', '', false, closeConfirm);
-    hasCredit.value ? router.push('/loan') : router.push('/loan'); // Или логика открытия
+    if (auth.user.isBlocked) return alert('Карта заморожена!');
+    
+    // Если в массиве есть хотя бы один кредит — идем гасить
+    if (auth.user.credits && auth.user.credits.length > 0) {
+        router.push('/loan'); // Страница LoanDetailsView.vue
+    } else {
+        // Если кредитов нет — идем брать новый
+        router.push('/open-loan'); // Страница LoanOpenView.vue
+    }
 };
 
 const handleInstallmentClick = () => {

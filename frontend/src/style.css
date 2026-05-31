@@ -1,16 +1,23 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+  /* СВЕТЛАЯ ТЕМА */
+  --bg-color: #f6f8fb;
+  --card-bg: #ffffff;
+  --text-main: #000428;
+  --text-muted: #6c757d;
+  --border-color: #f0f0f0;
+  --input-bg: #f8f9fa;
+  --header-bg: rgba(255, 255, 255, 0.9);
+}
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ТЕМНАЯ ТЕМА (НИХУЕВЫЙ MIDNIGHT BLUE) */
+.dark-theme {
+  --bg-color: #000414; /* Ультра-темный синий */
+  --card-bg: #0a0e29; /* Глубокий синий для карточек */
+  --text-main: #ffffff;
+  --text-muted: #a0aec0;
+  --border-color: #1a1f3d;
+  --input-bg: #131936;
+  --header-bg: rgba(10, 14, 41, 0.9);
 }
 
 a {
@@ -23,11 +30,9 @@ a:hover {
 }
 
 body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  background-color: var(--bg-color) !important;
+  color: var(--text-main);
+  transition: background-color 0.3s ease;
 }
 
 h1 {
