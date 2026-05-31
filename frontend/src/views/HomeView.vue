@@ -112,13 +112,10 @@
         <small>QR</small>
       </div>
 
-      <!-- Сервисы -->
-      <div class="nav-item" :class="{ active: isActive('/services') }" @click="goTo('/services')">
-        <div class="nav-icon-wrapper">
-            <i class="bi bi-grid-fill fs-4"></i>
+      <div class="nav-item" @click="$router.push('/history')">
+          <i class="bi bi-clock-history"></i>
+          <small>История</small>
         </div>
-        <small>Сервисы</small>
-      </div>
 
       <!-- Настройки -->
       <div class="nav-item" :class="{ active: isActive('/settings') }" @click="goTo('/settings')">

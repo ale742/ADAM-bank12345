@@ -348,18 +348,19 @@ const handlePhoneMask = (e) => {
 };
 
 const startPayment = () => {
-    if (auth.user.isBlocked) return triggerStatus('error', 'Карта заморожена', 'Разблокируйте карту для оплаты.');
+    if (auth.user.isBlocked) return triggerStatus('error', 'Блок', 'Разблокируйте карту.');
     isVerifying.value = true;
     setTimeout(async () => {
         try {
-            await auth.processPayment(payForm.amount);
+            // ФИКС ВЫЗОВА: Передаем сумму и название провайдера отдельно
+            await auth.processPayment(payForm.amount, selectedProvider.value, activeCategory.value.id, payForm.target);
             isVerifying.value = false;
             showReceipt.value = true;
         } catch (e) {
             isVerifying.value = false;
             triggerStatus('error', 'Ошибка', e.message);
         }
-    }, 2500);
+    }, 2000);
 };
 
 const simulateQRSuccess = () => {

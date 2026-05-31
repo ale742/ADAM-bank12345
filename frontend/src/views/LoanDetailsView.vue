@@ -36,7 +36,7 @@
         <div class="container content-area pt-5 mt-4">
             <!-- СТАТУС КРЕДИТА -->
             <div class="bg-card rounded-5 p-4 shadow-sm mb-4 text-center">
-                <small class="text-muted fw-bold text-uppercase ls-1 d-block mb-2">Остаток долга</small>
+                <small class="text-muted fw-bold text-uppercase ls-1 d-block mb-2">Остаток кредита</small>
                 <h1 class="display-5 fw-bold text-main mb-4">{{ formatMoney(loan.remainingDebt) }} ₸</h1>
                 
                 <div class="progress rounded-pill mb-3" style="height: 10px; background: rgba(0,0,0,0.05);">
@@ -54,10 +54,6 @@
                     <div>
                         <small class="text-muted d-block">Ближайший платеж</small>
                         <h3 class="fw-bold text-main m-0">{{ formatMoney(loan.monthlyPayment) }} ₸</h3>
-                    </div>
-                    <div class="text-end">
-                        <small class="text-muted d-block">Срок до</small>
-                        <span class="fw-bold text-primary">15.06.2026</span>
                     </div>
                 </div>
                 <button class="btn btn-primary w-100 py-3 rounded-pill fw-bold shadow-sm" @click="requestRepay('monthly')">

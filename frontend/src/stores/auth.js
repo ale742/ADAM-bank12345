@@ -1,40 +1,100 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import axios from '../axios';
 
 export const useAuthStore = defineStore('auth', () => {
-    // --- 1. СОСТОЯНИЕ (STATE) --- Сначала объявляем все переменные
+    // --- 1. СОСТОЯНИЕ (STATE) ---
     const isDarkMode = ref(localStorage.getItem('dark_mode') === 'true');
     const isWinterMode = ref(localStorage.getItem('winter_mode') === 'true');
-    const token = ref(localStorage.getItem('token') || 'demo-token');
+    const token = ref(localStorage.getItem('token') || null);
     const localAccounts = ref(JSON.parse(localStorage.getItem('local_accounts')) || []);
 
-    const user = ref(JSON.parse(localStorage.getItem('user')) || {
-        balance: 100000,
-        deposits: [],
-        credits: [],
-        isBlocked: false,
-        name: 'АСЛАН МУСИН',
-        iin: '000000000000',
-        card_number: '8400 3435 3687 9207',
-        card_cvv: '968',
-        card_exp: '05/29',
-        avatar: null // Добавили поле аватарки, чтобы не было ошибки
-    });
+    const user = ref(JSON.parse(localStorage.getItem('user')) || null);
 
-    // --- 2. ИНИЦИАЛИЗАЦИЯ ТЕМЫ --- Теперь, когда переменная есть, можно проверять
+    // --- 2. ИНИЦИАЛИЗАЦИЯ ТЕМЫ ---
     if (isDarkMode.value) {
         document.documentElement.classList.add('dark-theme');
     }
 
-    // Сохранение в память браузера
+    // Сохранение данных
     const save = () => {
         localStorage.setItem('user', JSON.stringify(user.value));
         localStorage.setItem('local_accounts', JSON.stringify(localAccounts.value));
+        if (token.value) {
+            localStorage.setItem('token', token.value);
+        }
     };
 
-    // --- 3. ФУНКЦИИ АККАУНТА И ТЕМЫ ---
+    // --- 3. УНИВЕРСАЛЬНАЯ ИСТОРИЯ ---
+    const addTransaction = (data) => {
+        if (!user.value) return;
+        if (!user.value.transactions) user.value.transactions = [];
+        
+        user.value.transactions.unshift({
+            id: Date.now(),
+            date: new Date().toLocaleString('ru-RU'),
+            title: data.title,
+            amount: Number(data.amount),
+            type: data.type, // 'income' или 'expense'
+            category: data.category, 
+            target: data.target || '',
+            from: data.from || 'ADAM Card'
+        });
+        save();
+    };
+
+    // --- 4. АВТОРИЗАЦИЯ И РЕГИСТРАЦИЯ ---
+    const register = async (credentials) => {
+        await new Promise(r => setTimeout(r, 1500));
+        
+        const newUser = {
+            ...credentials,
+            balance: 100000,
+            deposits: [],
+            credits: [],
+            transactions: [],
+            isBlocked: false,
+            card_number: "8400 " + Math.floor(1000 + Math.random() * 9000) + " " + Math.floor(1000 + Math.random() * 9000) + " " + Math.floor(1000 + Math.random() * 9000),
+            card_cvv: Math.floor(100 + Math.random() * 899).toString(),
+            card_exp: "05/29",
+            avatar: null,
+            iban: 'KZ99ADAM' + Math.floor(Math.random() * 1000000000)
+        };
+
+        localAccounts.value.push(newUser);
+        user.value = newUser;
+        token.value = 'demo-token';
+        save();
+        return true;
+    };
+
+    const login = async (credentials) => {
+        await new Promise(r => setTimeout(r, 1000));
+        const found = localAccounts.value.find(acc => 
+            (acc.iin === credentials.iin && acc.password === credentials.password) ||
+            (acc.phone === credentials.phone)
+        );
+
+        if (found) {
+            user.value = found;
+            token.value = 'demo-token';
+            save();
+            return true;
+        } else {
+            throw new Error('Данные не верны или аккаунт не существует');
+        }
+    };
+
+    const logout = () => {
+        user.value = null;
+        token.value = null;
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        location.reload();
+    };
+
+    // --- 5. ФУНКЦИИ АККАУНТА И ТЕМЫ ---
     const updateAvatar = (imgData) => {
+        if (!user.value) return;
         user.value.avatar = imgData;
         save();
     };
@@ -50,10 +110,17 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('winter_mode', isWinterMode.value);
     };
 
-    // --- 4. ФУНКЦИИ ДЕПОЗИТА ---
+    const toggleBlockCard = () => {
+        if (!user.value) return;
+        user.value.isBlocked = !user.value.isBlocked;
+        save();
+    };
+
+    // --- 6. ФУНКЦИИ ДЕПОЗИТА ---
     const openDeposit = (data) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         if (user.value.deposits.length >= 5) throw new Error('Максимальное количество депозитов — 5');
+        
         const numAmount = Number(data.amount); 
         const currentBalance = Number(user.value.balance); 
 
@@ -61,7 +128,7 @@ export const useAuthStore = defineStore('auth', () => {
             user.value.balance = currentBalance - numAmount;
             if (!user.value.deposits) user.value.deposits = [];
             user.value.deposits.push({ 
-                id: Date.now(), 
+                id: data.id || Date.now(), 
                 amount: numAmount, 
                 title: data.title, 
                 type: data.type, 
@@ -70,7 +137,14 @@ export const useAuthStore = defineStore('auth', () => {
                 isAmountHidden: false,
                 createdAt: Date.now()
             });
-            save();
+            
+            addTransaction({
+                title: `Открытие: ${data.title}`,
+                amount: numAmount,
+                type: 'expense',
+                category: 'deposit',
+                target: 'Счет депозита'
+            });
         } else {
             throw new Error('Недостаточно средств на балансе карты');
         }
@@ -79,65 +153,87 @@ export const useAuthStore = defineStore('auth', () => {
     const replenishDeposit = (id, amount) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         const num = Number(amount);
-        const dep = user.value.deposits.find(d => d.id == id);
-        if (user.value.balance >= num) {
-            user.value.balance -= num;
+        const currentBalance = Number(user.value.balance);
+
+        if (currentBalance >= num) {
+            const dep = user.value.deposits.find(d => d.id == id);
+            user.value.balance = currentBalance - num;
             dep.amount += num;
-            save();
+            
+            addTransaction({
+                title: `Пополнение: ${dep.title}`,
+                amount: num,
+                type: 'expense',
+                category: 'deposit',
+                target: dep.title
+            });
         } else {
             throw new Error('Недостаточно средств на основном счете');
-        }
-    };
-
-    const toggleDepVisibility = (id) => {
-        const dep = user.value.deposits.find(d => d.id == id);
-        if (dep) { 
-            dep.isAmountHidden = !dep.isAmountHidden; 
-            save(); 
         }
     };
 
     const withdrawToCard = (id, amount) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         const num = Number(amount);
-        const dep = user.value.deposits.find(d => d.id === id);
+        const dep = user.value.deposits.find(d => d.id == id);
         
-        if (!dep.canWithdraw) throw new Error('С этого вклада нельзя снимать деньги до конца срока');
+        if (!dep.canWithdraw) throw new Error('Этот депозит без права снятия');
         
         const remainder = dep.amount - num;
         if (remainder > 0 && remainder < 1000) {
-            throw new Error('Неснижаемый остаток — 1000 ₸. Чтобы забрать всё, закройте депозит полностью.');
+            throw new Error('Неснижаемый остаток — 1000 ₸.');
         }
 
         if (dep.amount >= num) {
             dep.amount -= num;
-            user.value.balance += num;
-            save();
+            user.value.balance = Number(user.value.balance) + num;
+            
+            addTransaction({
+                title: `Снятие: ${dep.title}`,
+                amount: num,
+                type: 'income',
+                category: 'deposit',
+                target: 'ADAM Card'
+            });
         } else {
             throw new Error('Недостаточно денег на депозите');
         }
     };
 
     const closeDeposit = (id) => {
-        const index = user.value.deposits.findIndex(d => d.id === id);
+        const index = user.value.deposits.findIndex(d => d.id == id);
         if (index !== -1) {
-            user.value.balance += user.value.deposits[index].amount;
+            const amount = user.value.deposits[index].amount;
+            const title = user.value.deposits[index].title;
+            user.value.balance = Number(user.value.balance) + amount;
+            
+            addTransaction({
+                title: `Закрытие вклада: ${title}`,
+                amount: amount,
+                type: 'income',
+                category: 'deposit'
+            });
             user.value.deposits.splice(index, 1);
             save();
         }
     };
-    
+
     const renameDeposit = (id, newTitle) => {
-        const dep = user.value.deposits.find(d => d.id === id);
+        const dep = user.value.deposits.find(d => d.id == id);
         if (dep) { dep.title = newTitle; save(); }
+    };
+
+    const toggleDepVisibility = (id) => {
+        const dep = user.value.deposits.find(d => d.id == id);
+        if (dep) { dep.isAmountHidden = !dep.isAmountHidden; save(); }
     };
 
     const checkAutoCloseRule = () => {
         const now = Date.now();
         const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+        if (!user.value?.deposits) return;
         user.value.deposits = user.value.deposits.filter(dep => {
-            const daysPassed = now - dep.createdAt;
-            if (daysPassed > threeDaysMs && dep.amount < 1000) {
+            if ((now - dep.createdAt) > threeDaysMs && dep.amount < 1000) {
                 user.value.balance += dep.amount;
                 return false;
             }
@@ -146,110 +242,73 @@ export const useAuthStore = defineStore('auth', () => {
         save();
     };
 
-    // --- 5. ФУНКЦИИ КРЕДИТА ---
+    // --- 7. ФУНКЦИИ КРЕДИТА ---
     const applyLoan = (data) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         const amount = Number(data.amount);
         const months = Number(data.months);
-        let rate = 15; 
-        if (months >= 12) rate = 18;
-        if (months >= 36) rate = 22;
-        if (months >= 60) rate = 25;
+        let rate = months >= 12 ? 18 : 15;
         const totalToReturn = Math.round(amount * (1 + (rate / 100)));
-        const monthlyPayment = Math.round(totalToReturn / months);
 
-        user.value.balance += amount;
+        user.value.balance = Number(user.value.balance) + amount;
         user.value.credits.push({
             id: Date.now(),
             amount: amount,
-            totalDebt: totalToReturn,
             remainingDebt: totalToReturn,
-            monthlyPayment: monthlyPayment,
+            monthlyPayment: Math.round(totalToReturn / months),
             rate: rate,
             months: months,
             monthsLeft: months,
             title: 'Персональный кредит'
         });
-        save();
+
+        addTransaction({
+            title: 'Зачисление кредита',
+            amount: amount,
+            type: 'income',
+            category: 'loan'
+        });
     };
 
     const repayLoan = (loanId, amount, isFull = false) => {
+        const num = Number(amount);
+        const currentBal = Number(user.value.balance);
+        if (currentBal < num) throw new Error('Недостаточно средств');
+
         const loan = user.value.credits.find(c => c.id === loanId);
-        if (!loan) return;
-        const payAmount = Number(amount);
-        if (user.value.balance < payAmount) throw new Error('Недостаточно средств');
-        user.value.balance -= payAmount;
+        user.value.balance = currentBal - num;
+        
+        addTransaction({
+            title: isFull ? 'Полное погашение кредита' : 'Платеж по кредиту',
+            amount: num,
+            type: 'expense',
+            category: 'loan'
+        });
+
         if (isFull) {
             user.value.credits = user.value.credits.filter(c => c.id !== loanId);
         } else {
-            loan.remainingDebt -= payAmount;
+            loan.remainingDebt -= num;
             loan.monthsLeft -= 1;
-            if (loan.remainingDebt <= 0) {
-                user.value.credits = user.value.credits.filter(c => c.id !== loanId);
-            }
+            if (loan.remainingDebt <= 0) user.value.credits = [];
         }
         save();
     };
 
-    // --- 6. ОСТАЛЬНЫЕ ОПЕРАЦИИ ---
-    const register = async (credentials) => {
-        await new Promise(r => setTimeout(r, 1500));
-        const newUser = {
-            ...credentials,
-            balance: 5000,
-            deposits: [],
-            credits: [],
-            isBlocked: false,
-            card_number: "8400 " + Math.floor(1000 + Math.random() * 9000) + " " + Math.floor(1000 + Math.random() * 9000) + " " + Math.floor(1000 + Math.random() * 9000),
-            card_cvv: Math.floor(100 + Math.random() * 899).toString(),
-            card_exp: "05/29",
-            avatar: null
-        };
-        localAccounts.value.push(newUser);
-        user.value = newUser;
-        token.value = 'demo-token';
-        localStorage.setItem('token', 'demo-token');
-        save();
-        return true;
-    };
-
-    const login = async (credentials) => {
-        await new Promise(r => setTimeout(r, 1000));
-        const found = localAccounts.value.find(acc => 
-            (acc.iin === credentials.iin && acc.password === credentials.password) ||
-            (acc.phone === credentials.phone)
-        );
-        if (found) {
-            user.value = found;
-            token.value = 'demo-token';
-            localStorage.setItem('token', 'demo-token');
-            save();
-            return true;
-        } else {
-            throw new Error('Данные не верны');
-        }
-    };
-
-    const logout = () => {
-        user.value = null;
-        token.value = null;
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
-        location.reload();
-    };
-
-    const toggleBlockCard = () => {
-        if (user.value) {
-            user.value.isBlocked = !user.value.isBlocked;
-            save();
-        }
-    };
-
-    const processPayment = (amount) => {
-        if (user.value.isBlocked) throw new Error('Карта заблокирована');
+    // --- 8. ПЛАТЕЖИ И ПЕРЕВОДЫ (ФИКС АРГУМЕНТОВ) ---
+    const processPayment = (amount, title = 'Платеж', category = 'payment', target = 'Поставщик') => {
         const num = Number(amount);
-        if (user.value.balance >= num) {
-            user.value.balance -= num;
+        const currentBal = Number(user.value.balance);
+        
+        if (currentBal >= num) {
+            user.value.balance = currentBal - num;
+            addTransaction({
+                title: title,
+                amount: num,
+                type: 'expense',
+                category: category,
+                target: target
+            });
             save();
         } else {
             throw new Error('Недостаточно средств на балансе');
@@ -257,8 +316,29 @@ export const useAuthStore = defineStore('auth', () => {
     };
 
     const topUpBalance = (amount) => {
-        user.value.balance += Number(amount);
-        save();
+        const num = Number(amount);
+        user.value.balance = Number(user.value.balance) + num;
+        addTransaction({
+            title: 'Пополнение Adam Card',
+            amount: num,
+            type: 'income',
+            category: 'topup',
+            target: 'Банкомат'
+        });
+    };
+
+    const makeTransfer = (amount, phone) => {
+        const num = Number(amount);
+        if (Number(user.value.balance) >= num) {
+            user.value.balance = Number(user.value.balance) - num;
+            addTransaction({
+                title: 'Перевод клиенту',
+                amount: num,
+                type: 'expense',
+                category: 'transfer',
+                target: phone
+            });
+        } else throw new Error('Недостаточно средств');
     };
 
     const transferFromDepToCard = (depId, amount) => {
@@ -266,15 +346,18 @@ export const useAuthStore = defineStore('auth', () => {
         const num = Number(amount);
         const remainder = dep.amount - num;
         if (remainder > 0 && remainder < 1000) {
-            throw new Error('Неснижаемый остаток — 1000 ₸. Переведите меньше или закройте депозит.');
+            throw new Error('Неснижаемый остаток — 1000 ₸.');
         }
         if (dep && dep.amount >= num) {
             dep.amount -= num;
-            user.value.balance += num;
-            save();
-        } else {
-            throw new Error('Недостаточно средств на депозите');
-        }
+            user.value.balance = Number(user.value.balance) + num;
+            addTransaction({
+                title: `Перевод с: ${dep.title}`,
+                amount: num,
+                type: 'income',
+                category: 'deposit'
+            });
+        } else throw new Error('Недостаточно средств на депозите');
     };
 
     return { 
@@ -282,6 +365,6 @@ export const useAuthStore = defineStore('auth', () => {
         toggleWinterMode, toggleBlockCard, openDeposit, repayLoan,
         replenishDeposit, withdrawToCard, closeDeposit, renameDeposit, toggleDepVisibility,
         topUpBalance, transferFromDepToCard, checkAutoCloseRule, processPayment, toggleDarkMode, 
-        applyLoan, updateAvatar
+        applyLoan, updateAvatar, addTransaction
     };
 });
