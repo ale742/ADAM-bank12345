@@ -1,8 +1,14 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import axios from '../axios';
 
 export const useAuthStore = defineStore('auth', () => {
-    // 1. СОСТОЯНИЕ (STATE)
+    // --- 1. СОСТОЯНИЕ (STATE) --- Сначала объявляем все переменные
+    const isDarkMode = ref(localStorage.getItem('dark_mode') === 'true');
+    const isWinterMode = ref(localStorage.getItem('winter_mode') === 'true');
+    const token = ref(localStorage.getItem('token') || 'demo-token');
+    const localAccounts = ref(JSON.parse(localStorage.getItem('local_accounts')) || []);
+
     const user = ref(JSON.parse(localStorage.getItem('user')) || {
         balance: 100000,
         deposits: [],
@@ -12,12 +18,14 @@ export const useAuthStore = defineStore('auth', () => {
         iin: '000000000000',
         card_number: '8400 3435 3687 9207',
         card_cvv: '968',
-        card_exp: '05/29'
+        card_exp: '05/29',
+        avatar: null // Добавили поле аватарки, чтобы не было ошибки
     });
 
-    const token = ref(localStorage.getItem('token') || 'demo-token');
-    const isWinterMode = ref(localStorage.getItem('winter_mode') === 'true');
-    const localAccounts = ref(JSON.parse(localStorage.getItem('local_accounts')) || []);
+    // --- 2. ИНИЦИАЛИЗАЦИЯ ТЕМЫ --- Теперь, когда переменная есть, можно проверять
+    if (isDarkMode.value) {
+        document.documentElement.classList.add('dark-theme');
+    }
 
     // Сохранение в память браузера
     const save = () => {
@@ -25,8 +33,24 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('local_accounts', JSON.stringify(localAccounts.value));
     };
 
-    // --- ФУНКЦИИ ДЕПОЗИТА ---
+    // --- 3. ФУНКЦИИ АККАУНТА И ТЕМЫ ---
+    const updateAvatar = (imgData) => {
+        user.value.avatar = imgData;
+        save();
+    };
 
+    const toggleDarkMode = () => {
+        isDarkMode.value = !isDarkMode.value;
+        localStorage.setItem('dark_mode', isDarkMode.value);
+        document.documentElement.classList.toggle('dark-theme', isDarkMode.value);
+    };
+
+    const toggleWinterMode = () => {
+        isWinterMode.value = !isWinterMode.value;
+        localStorage.setItem('winter_mode', isWinterMode.value);
+    };
+
+    // --- 4. ФУНКЦИИ ДЕПОЗИТА ---
     const openDeposit = (data) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
         if (user.value.deposits.length >= 5) throw new Error('Максимальное количество депозитов — 5');
@@ -44,7 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
                 rate: data.rate,
                 canWithdraw: data.type !== 'strict',
                 isAmountHidden: false,
-                createdAt: Date.now() // ФИКС: Сохраняем время открытия для правила 3-х дней
+                createdAt: Date.now()
             });
             save();
         } else {
@@ -80,7 +104,6 @@ export const useAuthStore = defineStore('auth', () => {
         
         if (!dep.canWithdraw) throw new Error('С этого вклада нельзя снимать деньги до конца срока');
         
-        // ПРАВИЛО МИН. БАЛАНСА 1000 ТЕНГЕ
         const remainder = dep.amount - num;
         if (remainder > 0 && remainder < 1000) {
             throw new Error('Неснижаемый остаток — 1000 ₸. Чтобы забрать всё, закройте депозит полностью.');
@@ -109,24 +132,66 @@ export const useAuthStore = defineStore('auth', () => {
         if (dep) { dep.title = newTitle; save(); }
     };
 
-    // ФУНКЦИЯ ПРОВЕРКИ ПРАВИЛА 3-Х ДНЕЙ
     const checkAutoCloseRule = () => {
         const now = Date.now();
         const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
-
         user.value.deposits = user.value.deposits.filter(dep => {
             const daysPassed = now - dep.createdAt;
-            // Если прошло > 3 дней И баланс < 1000
             if (daysPassed > threeDaysMs && dep.amount < 1000) {
-                user.value.balance += dep.amount; // Возвращаем копейки на карту
-                return false; // Удаляем депозит
+                user.value.balance += dep.amount;
+                return false;
             }
             return true;
         });
         save();
     };
 
-    // --- ОСТАЛЬНЫЕ ФУНКЦИИ ---
+    // --- 5. ФУНКЦИИ КРЕДИТА ---
+    const applyLoan = (data) => {
+        if (user.value.isBlocked) throw new Error('Карта заблокирована');
+        const amount = Number(data.amount);
+        const months = Number(data.months);
+        let rate = 15; 
+        if (months >= 12) rate = 18;
+        if (months >= 36) rate = 22;
+        if (months >= 60) rate = 25;
+        const totalToReturn = Math.round(amount * (1 + (rate / 100)));
+        const monthlyPayment = Math.round(totalToReturn / months);
+
+        user.value.balance += amount;
+        user.value.credits.push({
+            id: Date.now(),
+            amount: amount,
+            totalDebt: totalToReturn,
+            remainingDebt: totalToReturn,
+            monthlyPayment: monthlyPayment,
+            rate: rate,
+            months: months,
+            monthsLeft: months,
+            title: 'Персональный кредит'
+        });
+        save();
+    };
+
+    const repayLoan = (loanId, amount, isFull = false) => {
+        const loan = user.value.credits.find(c => c.id === loanId);
+        if (!loan) return;
+        const payAmount = Number(amount);
+        if (user.value.balance < payAmount) throw new Error('Недостаточно средств');
+        user.value.balance -= payAmount;
+        if (isFull) {
+            user.value.credits = user.value.credits.filter(c => c.id !== loanId);
+        } else {
+            loan.remainingDebt -= payAmount;
+            loan.monthsLeft -= 1;
+            if (loan.remainingDebt <= 0) {
+                user.value.credits = user.value.credits.filter(c => c.id !== loanId);
+            }
+        }
+        save();
+    };
+
+    // --- 6. ОСТАЛЬНЫЕ ОПЕРАЦИИ ---
     const register = async (credentials) => {
         await new Promise(r => setTimeout(r, 1500));
         const newUser = {
@@ -137,7 +202,8 @@ export const useAuthStore = defineStore('auth', () => {
             isBlocked: false,
             card_number: "8400 " + Math.floor(1000 + Math.random() * 9000) + " " + Math.floor(1000 + Math.random() * 9000) + " " + Math.floor(1000 + Math.random() * 9000),
             card_cvv: Math.floor(100 + Math.random() * 899).toString(),
-            card_exp: "05/29"
+            card_exp: "05/29",
+            avatar: null
         };
         localAccounts.value.push(newUser);
         user.value = newUser;
@@ -169,6 +235,7 @@ export const useAuthStore = defineStore('auth', () => {
         token.value = null;
         localStorage.removeItem('user');
         localStorage.removeItem('token');
+        location.reload();
     };
 
     const toggleBlockCard = () => {
@@ -178,74 +245,15 @@ export const useAuthStore = defineStore('auth', () => {
         }
     };
 
-    const takeLoan = (amount, months) => {
+    const processPayment = (amount) => {
         if (user.value.isBlocked) throw new Error('Карта заблокирована');
-        user.value.balance += Number(amount);
-        user.value.credits.push({ id: Date.now(), amount: Number(amount), monthlyPayment: Math.round((Number(amount) * 1.22) / months), monthsLeft: months });
-        save();
-    };
-
-    const applyLoan = (data) => {
-    if (user.value.isBlocked) throw new Error('Карта заблокирована');
-    
-    const amount = Number(data.amount);
-    const months = Number(data.months);
-    
-    // Динамическая ставка: чем дольше срок, тем выше риск/процент
-    let rate = 15; 
-    if (months >= 12) rate = 18;
-    if (months >= 36) rate = 22;
-    if (months >= 60) rate = 25;
-
-    const totalToReturn = Math.round(amount * (1 + (rate / 100)));
-    const monthlyPayment = Math.round(totalToReturn / months);
-
-    user.value.balance += amount;
-    user.value.credits.push({
-        id: Date.now(),
-        amount: amount,
-        totalDebt: totalToReturn,
-        remainingDebt: totalToReturn,
-        monthlyPayment: monthlyPayment,
-        rate: rate,
-        months: months,
-        monthsLeft: months,
-        title: 'Персональный кредит'
-    });
-    save();
-};
-
-const repayLoan = (loanId, amount, isFull = false) => {
-    const loan = user.value.credits.find(c => c.id === loanId);
-    if (!loan) return;
-    const payAmount = Number(amount);
-
-    if (user.value.balance < payAmount) throw new Error('Недостаточно средств');
-
-    user.value.balance -= payAmount;
-    
-    if (isFull) {
-        user.value.credits = user.value.credits.filter(c => c.id !== loanId);
-    } else {
-        loan.remainingDebt -= payAmount;
-        loan.monthsLeft -= 1;
-        if (loan.remainingDebt <= 0) {
-            user.value.credits = user.value.credits.filter(c => c.id !== loanId);
+        const num = Number(amount);
+        if (user.value.balance >= num) {
+            user.value.balance -= num;
+            save();
+        } else {
+            throw new Error('Недостаточно средств на балансе');
         }
-    }
-    save();
-};
-
-
-
-    const makeTransfer = (amount) => {
-        user.value.balance -= Number(amount);
-        save();
-    };
-
-    const toggleWinterMode = () => {
-        isWinterMode.value = !isWinterMode.value;
-        localStorage.setItem('winter_mode', isWinterMode.value);
     };
 
     const topUpBalance = (amount) => {
@@ -256,13 +264,10 @@ const repayLoan = (loanId, amount, isFull = false) => {
     const transferFromDepToCard = (depId, amount) => {
         const dep = user.value.deposits.find(d => d.id === depId);
         const num = Number(amount);
-        
-        // Тут тоже добавим проверку неснижаемого остатка для перевода
         const remainder = dep.amount - num;
         if (remainder > 0 && remainder < 1000) {
             throw new Error('Неснижаемый остаток — 1000 ₸. Переведите меньше или закройте депозит.');
         }
-
         if (dep && dep.amount >= num) {
             dep.amount -= num;
             user.value.balance += num;
@@ -272,37 +277,11 @@ const repayLoan = (loanId, amount, isFull = false) => {
         }
     };
 
-    const processPayment = (amount) => {
-    if (user.value.isBlocked) throw new Error('Карта заблокирована');
-    const num = Number(amount);
-    if (user.value.balance >= num) {
-        user.value.balance -= num;
-        save();
-    } else {
-        throw new Error('Недостаточно средств на балансе');
-    }
-    };
-
-    const isDarkMode = ref(localStorage.getItem('dark_mode') === 'true');
-
-const toggleDarkMode = () => {
-    isDarkMode.value = !isDarkMode.value;
-    localStorage.setItem('dark_mode', isDarkMode.value);
-    // Применяем класс сразу к документу
-    document.documentElement.classList.toggle('dark-theme', isDarkMode.value);
-};
-
-// Инициализация при загрузке (вызови это в начале стора)
-if (isDarkMode.value) {
-    document.documentElement.classList.add('dark-theme');
-};
-
-
     return { 
-        user, token, isWinterMode, register, login, logout, 
-        toggleWinterMode, toggleBlockCard, openDeposit, takeLoan, repayLoan,
-        replenishDeposit, withdrawToCard, closeDeposit, makeTransfer, renameDeposit, toggleDepVisibility,
-        topUpBalance, transferFromDepToCard, checkAutoCloseRule, processPayment, isDarkMode, toggleDarkMode, 
-        applyLoan,
+        user, token, isWinterMode, isDarkMode, register, login, logout, 
+        toggleWinterMode, toggleBlockCard, openDeposit, repayLoan,
+        replenishDeposit, withdrawToCard, closeDeposit, renameDeposit, toggleDepVisibility,
+        topUpBalance, transferFromDepToCard, checkAutoCloseRule, processPayment, toggleDarkMode, 
+        applyLoan, updateAvatar
     };
 });
