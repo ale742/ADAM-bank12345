@@ -360,11 +360,30 @@ export const useAuthStore = defineStore('auth', () => {
         } else throw new Error('Недостаточно средств на депозите');
     };
 
+    const executeTransfer = (data) => {
+        const num = Number(data.amount);
+            if (user.value.balance < num) throw new Error('Недостаточно средств');
+
+            user.value.balance -= num;
+    
+            // Запись в историю
+        addTransaction({
+            title: data.title,
+            amount: num,
+            type: 'expense',
+            category: 'transfer',
+            target: data.target,
+            from: data.from || 'ADAM Card'
+        });
+        save();
+    };
+
+
     return { 
         user, token, isWinterMode, isDarkMode, register, login, logout, 
         toggleWinterMode, toggleBlockCard, openDeposit, repayLoan,
         replenishDeposit, withdrawToCard, closeDeposit, renameDeposit, toggleDepVisibility,
         topUpBalance, transferFromDepToCard, checkAutoCloseRule, processPayment, toggleDarkMode, 
-        applyLoan, updateAvatar, addTransaction
+        applyLoan, updateAvatar, addTransaction, executeTransfer,
     };
 });
