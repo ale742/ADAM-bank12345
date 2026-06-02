@@ -1,21 +1,6 @@
 <template>
   <div class="app-layout" :class="{ 'dark-theme': auth.isDarkMode }">
     
-    <!-- SIDEBAR ПК -->
-    <aside class="desktop-sidebar d-none d-lg-flex">
-      <div class="sidebar-header" @click="$router.push('/')">
-        <div class="logo-circle-adam">A</div>
-        <span class="brand-name-adam">ADAM BANK</span>
-      </div>
-      <nav class="sidebar-nav">
-        <div class="sidebar-link" @click="$router.push('/')"><i class="bi bi-house-door"></i> <span>Главная</span></div>
-        <div class="sidebar-link" @click="$router.push('/my-bank')"><i class="bi bi-wallet2"></i> <span>Мой банк</span></div>
-        <div class="sidebar-link" @click="$router.push('/payments')"><i class="bi bi-credit-card"></i> <span>Платежи</span></div>
-        <div class="sidebar-link active"><i class="bi bi-arrow-left-right"></i> <span>Переводы</span></div>
-        <div class="sidebar-link" @click="$router.push('/history')"><i class="bi bi-clock-history"></i> <span>История</span></div>
-        <div class="sidebar-link" @click="$router.push('/account')"><i class="bi bi-person-circle"></i> <span>Аккаунт</span></div>
-      </nav>
-    </aside>
 
     <div class="main-wrapper">
       
@@ -32,6 +17,14 @@
           </div>
         </div>
       </Transition>
+
+      <!-- Хедер -->
+    <div class="header d-flex align-items-center px-4 py-3 bg-white shadow-sm fixed-top">
+      <router-link to="/" class="btn btn-light rounded-circle shadow-sm me-3 back-btn">
+        <i class="bi bi-arrow-left text-dark"></i>
+      </router-link>
+      <h5 class="mb-0 fw-bold">Переводы</h5>
+    </div>
 
       <!-- 2. ЦИФРОВОЙ ЧЕК -->
       <Transition name="fade">
@@ -88,7 +81,6 @@
         
         <!-- === ЭКРАН 1: СПИСОК ТИПОВ === -->
         <div v-if="mode === 'list'" class="animate__animated animate__fadeIn">
-            <h2 class="fw-bold mb-4 d-none d-lg-block text-main">Переводы</h2>
             <div class="row g-3">
                 <div class="col-6 col-lg-3" v-for="m in menuOptions" :key="m.id" @click="mode = m.id">
                     <div class="transfer-type-card h-100 shadow-sm border-0">

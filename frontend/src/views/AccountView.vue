@@ -11,11 +11,8 @@
         <div class="sidebar-link" @click="$router.push('/')">
             <i class="bi bi-house-door"></i> <span>Главная</span>
         </div>
-        <div class="sidebar-link" @click="$router.push('/my-bank')">
-            <i class="bi bi-wallet2"></i> <span>Мой банк</span>
-        </div>
-        <div class="sidebar-link" @click="$router.push('/payments')">
-            <i class="bi bi-credit-card"></i> <span>Платежи</span>
+        <div class="sidebar-link" @click="$router.push('/qr')">
+            <i class="bi bi-qr-code"></i> <span>QR</span>
         </div>
         <!-- ЗАМЕНИЛИ СЕРВИСЫ НА ИСТОРИЮ -->
         <div class="sidebar-link" @click="$router.push('/history')">

@@ -8,8 +8,7 @@
       </div>
       <nav class="sidebar-nav">
         <div class="sidebar-link" @click="$router.push('/')"><i class="bi bi-house-door"></i> <span>Главная</span></div>
-        <div class="sidebar-link" @click="$router.push('/my-bank')"><i class="bi bi-wallet2"></i> <span>Мой банк</span></div>
-        <div class="sidebar-link" @click="$router.push('/payments')"><i class="bi bi-credit-card"></i> <span>Платежи</span></div>
+        <div class="sidebar-link" @click="$router.push('/qr')"><i class="bi bi-qr-code"></i> <span>QR</span></div>
         <div class="sidebar-link active"><i class="bi bi-clock-history"></i> <span>История</span></div>
         <div class="sidebar-link" @click="$router.push('/account')"><i class="bi bi-person-circle"></i> <span>Аккаунт</span></div>
       </nav>
