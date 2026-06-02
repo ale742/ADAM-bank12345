@@ -2,6 +2,8 @@
   <!-- Добавляем обертку app-layout для управления сеткой -->
   <div class="app-layout" :class="{ 'dark-theme': auth.isDarkMode }">
     
+
+    
     <!-- 1. SIDEBAR ДЛЯ ПК (Виден только на больших экранах d-lg-flex) -->
     <aside class="desktop-sidebar d-none d-lg-flex">
       <div class="sidebar-header">
@@ -33,8 +35,21 @@
       </div>
     </aside>
 
+
+    
     <!-- 2. ОСНОВНОЙ КОНТЕНТНЫЙ БЛОК -->
     <div class="main-wrapper">
+
+      <!-- ВЕРХНЯЯ ПАНЕЛЬ ДЛЯ ПК (Видна только на d-lg-flex) -->
+<header class="desktop-top-header d-none d-lg-flex align-items-center justify-content-between px-4 py-3">
+    <!-- Можно оставить пустым или перенести сюда поиск, но главное — иконка справа -->
+    <div class="ms-auto d-flex align-items-center gap-3">
+        <div class="message-btn-pc shadow-sm" @click="goTo('/messages')">
+            <i class="bi bi-chat-text-fill text-primary"></i>
+            <span class="notification-dot"></span>
+        </div>
+    </div>
+</header>
       
       <!-- Мобильный Хедер (Скрыт на ПК через d-lg-none) -->
       <header class="app-header bg-white shadow-sm fixed-top d-lg-none">
@@ -216,4 +231,46 @@ const isActive = (path) => route.path === path;
 }
 .brand-logo-img { width: 40px; height: 40px; border-radius: 10px; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* СТИЛЬ ИКОНКИ СООБЩЕНИЙ НА ПК */
+.desktop-top-header {
+    width: 100%;
+    height: 80px;
+    background: transparent; /* Оставляем прозрачным, чтобы не перегружать */
+}
+
+.message-btn-pc {
+    width: 50px;
+    height: 50px;
+    background-color: var(--bg-card); /* Белая в светлой, темная в темной теме */
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    font-size: 1.3rem;
+    transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.message-btn-pc:hover {
+    transform: scale(1.1);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.message-btn-pc:active {
+    transform: scale(0.95);
+}
+
+/* Красная точка уведомления */
+.notification-dot {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 10px;
+    height: 10px;
+    background-color: #dc3545;
+    border: 2px solid var(--bg-card);
+    border-radius: 50%;
+}
 </style>
