@@ -4,6 +4,7 @@ import { ref } from 'vue';
 export const useAuthStore = defineStore('auth', () => {
     // --- 1. СОСТОЯНИЕ (STATE) ---
     const isDarkMode = ref(localStorage.getItem('dark_mode') === 'true');
+    const notifications = ref(JSON.parse(localStorage.getItem('notifications')) || []);
     const isWinterMode = ref(localStorage.getItem('winter_mode') === 'true');
     const token = ref(localStorage.getItem('token') || null);
     const localAccounts = ref(JSON.parse(localStorage.getItem('local_accounts')) || []);
@@ -113,6 +114,7 @@ export const useAuthStore = defineStore('auth', () => {
     const toggleBlockCard = () => {
         if (!user.value) return;
         user.value.isBlocked = !user.value.isBlocked;
+        pushNotification('Статус карты изменен', user.value.isBlocked ? 'Карта заблокирована' : 'Карта разблокирована', 'security');
         save();
     };
 
@@ -136,8 +138,10 @@ export const useAuthStore = defineStore('auth', () => {
                 canWithdraw: data.type !== 'strict',
                 isAmountHidden: false,
                 createdAt: Date.now()
+
             });
-            
+            pushNotification('Депозит открыт', `Депозит "${data.title}" успешно открыт на сумму ${numAmount} ₸`, 'deposit');
+            save();
             addTransaction({
                 title: `Открытие: ${data.title}`,
                 amount: numAmount,
@@ -167,6 +171,8 @@ export const useAuthStore = defineStore('auth', () => {
                 category: 'deposit',
                 target: dep.title
             });
+            pushNotification('Депозит пополнен', `Депозит "${dep.title}" успешно пополнен на сумму ${num} ₸`, 'deposit');
+            save();
         } else {
             throw new Error('Недостаточно средств на основном счете');
         }
@@ -195,6 +201,8 @@ export const useAuthStore = defineStore('auth', () => {
                 category: 'deposit',
                 target: 'ADAM Card'
             });
+            pushNotification('Депозит закрыт', `Депозит "${dep.title}" успешно закрыт`, 'deposit');
+            save();
         } else {
             throw new Error('Недостаточно денег на депозите');
         }
@@ -213,6 +221,7 @@ export const useAuthStore = defineStore('auth', () => {
                 type: 'income',
                 category: 'deposit'
             });
+            pushNotification('Депозит закрыт', `Депозит "${title}" успешно закрыт`, 'deposit');
             user.value.deposits.splice(index, 1);
             save();
         }
@@ -221,6 +230,8 @@ export const useAuthStore = defineStore('auth', () => {
     const renameDeposit = (id, newTitle) => {
         const dep = user.value.deposits.find(d => d.id == id);
         if (dep) { dep.title = newTitle; save(); }
+        pushNotification('Депозит переименован', `Депозит "${newTitle}" успешно переименован`, 'deposit');
+        save();
     };
 
     const toggleDepVisibility = (id) => {
@@ -239,6 +250,7 @@ export const useAuthStore = defineStore('auth', () => {
             }
             return true;
         });
+        pushNotification('Депозиты закрыты', 'Некоторые депозиты были автоматически закрыты', 'deposit');
         save();
     };
 
@@ -268,6 +280,8 @@ export const useAuthStore = defineStore('auth', () => {
             type: 'income',
             category: 'loan'
         });
+        pushNotification('Кредит оформлен', `Кредит "${data.title}" успешно оформлен на сумму ${amount} ₸`, 'loan');
+        save();
     };
 
     const repayLoan = (loanId, amount, isFull = false) => {
@@ -292,6 +306,7 @@ export const useAuthStore = defineStore('auth', () => {
             loan.monthsLeft -= 1;
             if (loan.remainingDebt <= 0) user.value.credits = [];
         }
+        pushNotification('Кредит погашен', `Кредит "${loan.title}" успешно погашен на сумму ${num} ₸`, 'loan');
         save();
     };
 
@@ -309,6 +324,7 @@ export const useAuthStore = defineStore('auth', () => {
                 category: category,
                 target: target
             });
+            pushNotification('Платеж выполнен', `Платеж "${title}" успешно выполнен на сумму ${num} ₸`, 'transaction');
             save();
         } else {
             throw new Error('Недостаточно средств на балансе');
@@ -325,6 +341,8 @@ export const useAuthStore = defineStore('auth', () => {
             category: 'topup',
             target: 'Банкомат'
         });
+        pushNotification('Баланс пополнен', `Баланс карты успешно пополнен на сумму ${num} ₸`, 'transaction');
+        save();
     };
 
     const makeTransfer = (amount, phone) => {
@@ -338,6 +356,8 @@ export const useAuthStore = defineStore('auth', () => {
                 category: 'transfer',
                 target: phone
             });
+            pushNotification('Перевод выполнен', `Перевод клиенту "${phone}" успешно выполнен на сумму ${num} ₸`, 'transaction');
+            save(); 
         } else throw new Error('Недостаточно средств');
     };
 
@@ -357,6 +377,8 @@ export const useAuthStore = defineStore('auth', () => {
                 type: 'income',
                 category: 'deposit'
             });
+            pushNotification('Депозит переведен', `Средства с депозита "${dep.title}" успешно переведены на карту`, 'deposit');
+            save();
         } else throw new Error('Недостаточно средств на депозите');
     };
 
@@ -375,8 +397,30 @@ export const useAuthStore = defineStore('auth', () => {
             target: data.target,
             from: data.from || 'ADAM Card'
         });
+        pushNotification('Перевод выполнен', `Перевод клиенту "${data.target}" успешно выполнен на сумму ${num} ₸`, 'transaction');
         save();
     };
+
+    const playNotifySound = () => {
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+    audio.play().catch(e => console.log('Нужно взаимодействие с сайтом для звука'));
+};
+
+const pushNotification = (title, msg, type = 'info', extra = null) => {
+    const newNotify = {
+        id: Date.now(),
+        date: new Date().toLocaleString('ru-RU'),
+        title,
+        msg,
+        type, // 'info', 'transaction', 'security'
+        extra, // сюда можно кинуть данные для чека
+        isRead: false
+    };
+    notifications.value.unshift(newNotify);
+    playNotifySound(); // Звук!
+    localStorage.setItem('notifications', JSON.stringify(notifications.value));
+
+};
 
 
     return { 
@@ -384,6 +428,8 @@ export const useAuthStore = defineStore('auth', () => {
         toggleWinterMode, toggleBlockCard, openDeposit, repayLoan,
         replenishDeposit, withdrawToCard, closeDeposit, renameDeposit, toggleDepVisibility,
         topUpBalance, transferFromDepToCard, checkAutoCloseRule, processPayment, toggleDarkMode, 
-        applyLoan, updateAvatar, addTransaction, executeTransfer,
+        applyLoan, updateAvatar, addTransaction, executeTransfer, notifications, pushNotification, makeTransfer,
+        
+
     };
 });

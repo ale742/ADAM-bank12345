@@ -1,196 +1,126 @@
 <template>
-  <div class="page-wrapper">
+  <div class="app-layout" :class="{ 'dark-theme': auth.isDarkMode }">
     
-    <!-- Хедер -->
-    <div class="header d-flex align-items-center px-4 py-3 bg-white shadow-sm fixed-top">
-      <router-link to="/" class="btn btn-light rounded-circle shadow-sm me-3 back-btn">
-        <i class="bi bi-arrow-left text-dark"></i>
-      </router-link>
-      <h5 class="mb-0 fw-bold">Сообщения</h5>
-    </div>
+    <!-- SIDEBAR ДЛЯ ПК -->
+    <aside class="desktop-sidebar d-none d-lg-flex">
+      <!-- (Твой стандартный сайдбар, как в Истории) -->
+    </aside>
 
-    <!-- ТАБЫ -->
-    <div class="tabs-header bg-white fixed-top shadow-sm d-flex justify-content-around" style="top: 70px; z-index: 900;">
-        <div 
-            class="tab-item py-3 position-relative" 
-            :class="{ active: activeTab === 'notifications' }"
-            @click="activeTab = 'notifications'"
-        >
-            Уведомления
-            <span v-if="activeTab === 'notifications'" class="active-line"></span>
-        </div>
-        <div 
-            class="tab-item py-3 position-relative" 
-            :class="{ active: activeTab === 'support' }"
-            @click="activeTab = 'support'"
-        >
-            Поддержка
-            <span v-if="activeTab === 'support'" class="active-line"></span>
-        </div>
-    </div>
+    <div class="main-wrapper">
+      
+      <!-- ЦИФРОВОЙ ЧЕК (Модалка) -->
+      <Transition name="fade">
+          <div v-if="selectedReceipt" class="receipt-overlay" @click.self="selectedReceipt = null">
+              <div class="receipt-paper animate__animated animate__slideInUp">
+                  <div class="receipt-edge"></div>
+                  <div class="p-4 text-center">
+                      <h5 class="fw-bold mb-0">ADAM BANK</h5>
+                      <small class="text-muted">Электронный чек</small>
+                      <div class="receipt-divider my-3"></div>
+                      <h2 class="fw-bold">{{ formatMoney(selectedReceipt.amount) }} ₸</h2>
+                      <p class="text-muted small">{{ selectedReceipt.provider || 'Перевод' }}</p>
+                      
+                      <div class="text-start mt-4 small">
+                          <div class="d-flex justify-content-between mb-1"><span>Дата:</span><b>{{ currentDateTime() }}</b></div>
+                          <div class="d-flex justify-content-between"><span>Статус:</span><b class="text-success">Успешно</b></div>
+                      </div>
 
-    <!-- КОНТЕНТ -->
-    <div class="container main-content pb-5">
-        
-        <!-- 1. ВКЛАДКА УВЕДОМЛЕНИЯ -->
-        <div v-if="activeTab === 'notifications'" class="animate__animated animate__fadeIn">
-            <div class="text-muted small fw-bold mb-3 mt-2 ps-2">СЕГОДНЯ</div>
-            <div class="list-group rounded-4 shadow-sm border-0 bg-white overflow-hidden mb-4">
-                <div class="list-group-item p-3 border-0 d-flex align-items-start gap-3">
-                    <div class="icon-circle bg-danger bg-opacity-10 text-danger flex-shrink-0"><i class="bi bi-bag-fill"></i></div>
-                    <div>
-                        <div class="d-flex justify-content-between"><h6 class="mb-1 fw-bold">Покупка</h6><small class="text-muted">14:30</small></div>
-                        <p class="mb-0 text-muted small">Magnum Cash & Carry. Сумма: 2 500 ₸</p>
-                    </div>
-                </div>
-                <div class="list-group-item p-3 border-0 d-flex align-items-start gap-3">
-                    <div class="icon-circle bg-success bg-opacity-10 text-success flex-shrink-0"><i class="bi bi-gift-fill"></i></div>
-                    <div>
-                        <div class="d-flex justify-content-between"><h6 class="mb-1 fw-bold">Кэшбек начислен</h6><small class="text-muted">10:00</small></div>
-                        <p class="mb-0 text-muted small">Вам начислено 150 бонусов.</p>
-                    </div>
-                </div>
-            </div>
+                      <div class="d-flex gap-2 mt-4">
+                          <button class="btn btn-light flex-fill rounded-pill" @click="shareReceipt">
+                              <i class="bi bi-share"></i>
+                          </button>
+                          <button class="btn btn-primary flex-fill rounded-pill fw-bold" @click="selectedReceipt = null">Закрыть</button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </Transition>
+
+      <div class="header d-flex align-items-center px-4 py-3 bg-header fixed-top d-lg-none">
+        <button @click="$router.push('/')" class="btn btn-light-custom rounded-circle me-3"><i class="bi bi-arrow-left"></i></button>
+        <h5 class="mb-0 fw-bold text-main">Уведомления</h5>
+      </div>
+
+      <div class="container content-area pb-5">
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <h2 class="fw-bold m-0 text-main d-none d-lg-block">Сообщения</h2>
+            <button class="btn btn-link text-primary p-0 fw-bold small text-decoration-none" @click="clearAll">Очистить всё</button>
         </div>
 
-        <!-- 2. ВКЛАДКА ПОДДЕРЖКА (Чат с БД) -->
-        <div v-if="activeTab === 'support'" class="chat-container animate__animated animate__fadeIn">
-            
-            <div class="chat-history d-flex flex-column gap-3 pb-5">
+        <div v-if="auth.notifications.length > 0" class="notifications-list">
+            <div v-for="n in auth.notifications" :key="n.id" 
+                 class="notify-card p-4 mb-3 shadow-sm bg-card"
+                 :class="{ 'unread': !n.isRead }">
                 
-                <!-- Приветствие -->
-                <div class="message bot align-self-start">
-                    <div class="msg-bubble bg-white shadow-sm rounded-4 p-3">
-                        <small class="text-primary fw-bold mb-1 d-block">ADAM Support</small>
-                        Здравствуйте! 👋 Я виртуальный помощник. Чем могу помочь?
+                <div class="d-flex gap-3">
+                    <div class="notify-icon-circle" :class="n.type">
+                        <i class="bi" :class="getIcon(n.type)"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between">
+                            <h6 class="fw-bold text-main mb-1">{{ n.title }}</h6>
+                            <small class="text-muted">{{ n.date.split(',')[1] }}</small>
+                        </div>
+                        <p class="small text-muted mb-2">{{ n.msg }}</p>
+                        
+                        <!-- Кнопка чека если есть данные -->
+                        <button v-if="n.extra" @click="selectedReceipt = n.extra" class="btn btn-light-custom btn-sm rounded-pill px-3 fw-bold">
+                            <i class="bi bi-file-earmark-text me-1"></i> Чек
+                        </button>
                     </div>
                 </div>
-
-                <!-- 🔥 ИСТОРИЯ ИЗ БАЗЫ ДАННЫХ -->
-                <div v-for="msg in messages" :key="msg.id" class="d-flex flex-column gap-2">
-                    
-                    <!-- Сообщение КЛИЕНТА (Справа) -->
-                    <div class="message align-self-end text-end" style="max-width: 85%;">
-                        <div class="msg-bubble p-3 rounded-4 shadow-sm bg-primary text-white">
-                            {{ msg.message }}
-                        </div>
-                        <small class="text-muted mt-1 d-block me-2" style="font-size: 0.7rem;">
-                            {{ formatTime(msg.created_at) }}
-                        </small>
-                    </div>
-
-                    <!-- Ответ АДМИНА (Слева) - если есть -->
-                    <div v-if="msg.answer" class="message align-self-start text-start" style="max-width: 85%;">
-                        <div class="msg-bubble p-3 rounded-4 shadow-sm bg-white text-dark">
-                            <small class="text-primary fw-bold mb-1 d-block">Оператор</small>
-                            {{ msg.answer }}
-                        </div>
-                        <small class="text-muted mt-1 d-block ms-2" style="font-size: 0.7rem;">
-                            {{ formatTime(msg.updated_at) }}
-                        </small>
-                    </div>
-
-                </div>
-
             </div>
-
-            <!-- Поле ввода -->
-            <div class="chat-input-area fixed-bottom bg-white p-3 shadow-lg border-top d-flex gap-2">
-                <button class="btn btn-light rounded-circle text-muted"><i class="bi bi-paperclip"></i></button>
-                <input 
-                    v-model="newMessage" 
-                    @keyup.enter="sendMessage"
-                    type="text" 
-                    class="form-control rounded-pill bg-light border-0" 
-                    placeholder="Напишите сообщение..."
-                >
-                <button 
-                    @click="sendMessage" 
-                    class="btn btn-primary rounded-circle shadow-sm" 
-                    :disabled="!newMessage.trim()"
-                >
-                    <i class="bi bi-send-fill"></i>
-                </button>
-            </div>
-
         </div>
 
+        <div v-else class="text-center py-5">
+            <i class="bi bi-chat-left-dots display-1 text-muted opacity-25"></i>
+            <h5 class="mt-3 text-muted fw-bold">Сообщений нет</h5>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick, watch } from 'vue';
-import axios from '../axios'; // Наш настроенный axios
+import { ref } from 'vue';
+import { useAuthStore } from '../stores/auth';
 
-const activeTab = ref('notifications');
-const newMessage = ref('');
-const messages = ref([]); // Список сообщений из базы
+const auth = useAuthStore();
+const selectedReceipt = ref(null);
 
-// Формат времени (14:30)
-const formatTime = (dateString) => {
-    if (!dateString) return '';
-    return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const getIcon = (type) => {
+    return { transaction: 'bi-cash-stack', security: 'bi-shield-lock', info: 'bi-info-circle' }[type] || 'bi-bell';
 };
 
-// Загрузка чата с сервера
-const loadMessages = async () => {
-    try {
-        const response = await axios.get('/support');
-        messages.value = response.data;
-        scrollToBottom();
-    } catch (e) {
-        console.error('Ошибка загрузки чата', e);
+const clearAll = () => { if(confirm('Удалить все сообщения?')) auth.notifications = []; localStorage.removeItem('notifications'); };
+const formatMoney = (v) => new Intl.NumberFormat('ru-RU').format(v);
+const currentDateTime = () => new Date().toLocaleString('ru-RU');
+
+const shareReceipt = () => {
+    if (navigator.share) {
+        navigator.share({ title: 'Чек Adam Bank', text: 'Квитанция об оплате', url: window.location.href });
+    } else {
+        alert('Ссылка на чек скопирована!');
     }
 };
-
-// Отправка сообщения
-const sendMessage = async () => {
-    if (!newMessage.value.trim()) return;
-
-    try {
-        const response = await axios.post('/support', {
-            message: newMessage.value
-        });
-
-        // Добавляем ответ сервера в список (чтобы сразу отобразилось)
-        messages.value.push(response.data);
-        
-        newMessage.value = '';
-        scrollToBottom();
-    } catch (e) {
-        alert('Не удалось отправить сообщение');
-    }
-};
-
-const scrollToBottom = async () => {
-    await nextTick();
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-};
-
-// Следим за переключением вкладок
-watch(activeTab, (val) => {
-    if (val === 'support') {
-        loadMessages();
-    }
-});
 </script>
 
 <style scoped>
-.page-wrapper { min-height: 100vh; background-color: #f6f8fb; font-family: 'Inter', sans-serif; }
-.header { z-index: 1000; }
-.back-btn { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+.content-area { padding-top: 100px; max-width: 700px; }
+.notify-card { border-radius: 25px; transition: 0.3s; border: 1px solid var(--border); }
+.notify-card.unread { border-left: 4px solid #004e92; }
 
-/* ТАБЫ */
-.tabs-header { border-radius: 0 0 20px 20px; }
-.tab-item { width: 50%; text-align: center; font-weight: 600; color: #9aa0a6; cursor: pointer; transition: color 0.2s; }
-.tab-item.active { color: #004e92; }
-.active-line { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background-color: #004e92; border-radius: 4px 4px 0 0; }
+.notify-icon-circle { 
+    width: 45px; height: 45px; border-radius: 12px; 
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+}
+.notify-icon-circle.transaction { background: rgba(25, 135, 84, 0.1); color: #198754; }
+.notify-icon-circle.security { background: rgba(220, 53, 69, 0.1); color: #dc3545; }
+.notify-icon-circle.info { background: rgba(0, 78, 146, 0.1); color: #004e92; }
 
-.main-content { padding-top: 140px; }
-.icon-circle { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
-
-/* ЧАТ */
-.msg-bubble { min-width: 100px; position: relative; }
-.chat-input-area { padding-bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 1000; }
+/* RECEIPT CSS из прошлых уроков */
+.receipt-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(10px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.receipt-paper { background: white; width: 100%; max-width: 340px; border-radius: 0 0 25px 25px; position: relative; color: #000; }
+.receipt-edge { height: 10px; background: white; width: 100%; position: absolute; top: -10px; clip-path: polygon(0% 100%, 5% 0%, 10% 100%, 15% 0%, 20% 100%, 25% 0%, 30% 100%, 35% 0%, 40% 100%, 45% 0%, 50% 100%, 55% 0%, 60% 100%, 65% 0%, 70% 100%, 75% 0%, 80% 100%, 85% 0%, 90% 100%, 95% 0%, 100% 100%); }
+.paid-stamp { border: 3px solid #198754; color: #198754; padding: 4px 12px; border-radius: 8px; font-weight: 900; display: inline-block; transform: rotate(-10deg); }
 </style>
