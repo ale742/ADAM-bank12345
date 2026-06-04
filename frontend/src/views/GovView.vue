@@ -281,4 +281,17 @@ const triggerActionError = () => {
 
 .scale-enter-active, .scale-leave-active { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
 .scale-enter-from, .scale-leave-to { opacity: 0; transform: scale(0.5); }
+
+.list-group-item .text-muted {
+    color: #cbd5e0 !important; /* Почти белый, но мягкий серый */
+}
+
+.header-title{
+    color: var(--text-main) !important;
+}
+
+.btn{
+    background-color: var(--btn-light) !important;
+    color: var(--text-main) !important;
+}
 </style>
