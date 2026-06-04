@@ -294,4 +294,9 @@ const triggerActionError = () => {
     background-color: var(--btn-light) !important;
     color: var(--text-main) !important;
 }
+
+.dark-theme .status-card p.text-muted {
+    color: #cbd5e0 !important; /* Светло-серый, почти белый цвет */
+    opacity: 1 !important;
+}
 </style>
